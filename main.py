@@ -60,7 +60,7 @@ def unknownOSC(address, args, tags, IPaddress):
 def handleAck(address, args, tags, IPaddress):
     global knownLights
     hostname, value = args
-    print("got ACK for %s : %i"%(hostname, value))
+    # print("got ACK for %s : %i"%(hostname, value))
     if hostname in knownLights : knownLights[hostname].ack = value
     else : 
         print("WARNING : received ACK from unknown device %s at %s" %(hostname, IPaddress.url))
@@ -76,27 +76,29 @@ def handleID(address, args, tags, IPaddress):
 
 def setLight(hostname, value):
     value = int(value)
+    # print("setting %s to %i" %(hostname, value))
     if hostname in knownLights : knownLights[hostname].setLight(value)
     else : print("ERROR : cannot set light value on unknown device "+hostname)
 
-# TODO : implement a logarithmic fade
-def fadeLight(hostname, fadeFrom, fadeTo, duration) :
-    stepsCount = max(fadeFrom, fadeTo) - min(fadeFrom, fadeTo) +1
-    delay = duration/stepsCount
-    delay /= 2 # why ??? it does works but why ??
-    currentValue = fadeFrom
-    for steps in range(stepsCount):
-        Timer(delay*steps, setLight, args=[hostname, currentValue]).start()
-        currentValue = currentValue+1 if fadeFrom<fadeTo else currentValue-1
+def fadeLight(hostname, fadeFrom, fadeTo, duration, exp=2, delay=0.05) :
+    reverse = True if fadeFrom > fadeTo else False
+    if reverse : fadeFrom, fadeTo = fadeTo, fadeFrom
+    stepsCount = int(duration/delay)
+    values = [i**exp for i in range(0,stepsCount)]
+    mapToRange = lambda x, a, b, c, d : int((x-a)/(b-a)*(d-c)+c)
+    values = [mapToRange(x,min(values), max(values), fadeFrom, fadeTo) for x in values]
+    if reverse : values.reverse()
+    for i in range(len(values)) :
+        Timer(delay*i+1, setLight, args=[hostname, values[i]]).start()
 
 def lightShow(hostname, fadeTime, totalTime=False):
     timeStarted = time.time()
     while runOSCserver :
         if totalTime and time.time() - timeStarted > totalTime : return
         fadeLight(hostname, 0, 100, fadeTime)
-        time.sleep(fadeTime/2)
+        time.sleep(fadeTime)
         fadeLight(hostname, 100, 0, fadeTime)
-        time.sleep(fadeTime/2)
+        time.sleep(fadeTime)
 
 def broadcastOSC(OSCaddress, OSCport, OSCargs=None):
     """
