@@ -1,6 +1,20 @@
+/*Copyright 2019 Reso-nance Numérique <laurent@reso-nance.org>
 
-/*--------------This code is for a Wemos D1 board equipped with a MCP3204 (12bits 8 channels ADC).
- * Every input has it's internal pull-up enabled, so a switch must be wired between the input and ground for example
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+  MA 02110-1301, USA.
+
 
           Wemos D1         INPUTpins
             5V -------------- vcc
@@ -23,12 +37,13 @@ compiled with ESP8266 v2.4.1 and OSC 1.3.3
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <OSCMessage.h>
-
+#include "RBDdimmerESP8266.h"
 
 #define OTA_TIMEOUT 5 // time in seconds after which the device resume it's normal activity if no OTA firmware is comming 
 #define SERIAL_DEBUG
+#define DIMMER_PWM D1
+#define DIMMER_ZC D2
 
-const int lightPin=D1;
 const String MACaddress=WiFi.macAddress();
 String hostname="light_"+MACaddress;
 static char* PSK = "malinette666";
@@ -43,6 +58,7 @@ char incomingAddress[128]; // OSC address buffer
 String OSCprefix; // will store /[hostname][MACaddress without semicolons
 bool OTA_asked = false; // flag which become true for OTA_TIMEOUT seconds after receiving a /beginOTA message to suspend device activity while flashing
 int lastValueUsed = 0;
+dimmerLampESP8266 dimmer(DIMMER_PWM, DIMMER_ZC);
 
 #ifdef SERIAL_DEBUG
   #define debugPrint(x)  Serial.print (x)
@@ -53,7 +69,8 @@ int lastValueUsed = 0;
 #endif
 
 void setup() {
-  digitalWrite(lightPin, LOW);
+  dimmer.begin(NORMAL_MODE, ON);
+  dimmer.setPower(0);
   hostname.replace(":","");
   OSCprefix = "/"+hostname;
   char hostnameAsChar[hostname.length()+1];
@@ -97,7 +114,7 @@ void loop() {
         debugPrint("set server IP to ");debugPrintln(serverIP);
       } else if (msg->fullMatch(OSCLightAddress)&& msg->isInt(0)) { 
         int value = msg->getInt(0);
-        value = constrain(value, 0, 1023);
+        value = constrain(value, 0, 100);
         setLight(value);
       } else if ( msg->fullMatch(OSCOTA) ) {
         debugPrintln("Asked to prepare for OTA flashing");
@@ -125,7 +142,7 @@ void sendACK() {
 }
 
 void setLight(int value) {
-  analogWrite(lightPin, value);
+  dimmer.setPower(value);
   lastValueUsed = value;
   sendACK();
 }
