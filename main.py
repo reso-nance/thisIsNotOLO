@@ -19,18 +19,38 @@
 #  MA 02110-1301, USA.
 #  
 import liblo, time
-from threading import Thread
+from threading import Thread, Timer
 
-knownDevices = {}
+knownLights = {}
 OSCsendPort = 8000
 OSClistenPort = 9000
-runOSCserver = True
+runOSCserver, runValidation = True, True
+validationTime = .1 # time in s after which a light value will be sent again if no ACK has been received
 
 class Light:
     def __init__(self, hostname, ip):
         self.hostname = hostname
         self.ip = ip
         self.ack = 0
+        self.value = 0
+        self.validationTime = time.time()*1000
+        self.validated = False
+
+    def setLight(self, value):
+        self.value = max(0, min(int(value), 100))
+        liblo.send((self.ip, OSCsendPort), "/"+self.hostname+"/light", self.value)
+        self.validationTime = time.time()
+        self.validated = False
+    
+    def validate(self):
+        if not self.validated and time.time() - self.validationTime > validationTime :
+            if self.ack == self.value : 
+                self.validated = True
+                print("validated")
+            else : 
+                self.setLight(self.value)
+                print("sending again")
+
 
 def unknownOSC(address, args, tags, IPaddress):
     print("got unknown message '%s' from '%s'" % (address, IPaddress.url))
@@ -38,24 +58,25 @@ def unknownOSC(address, args, tags, IPaddress):
         print ("  argument of type '%s': %s" % (t, a))
 
 def handleAck(address, args, tags, IPaddress):
-    global knownDevices
+    global knownLights
     hostname, value = args
-    if hostname in knownDevices : knownDevices[hostname].ack = value
+    print("got ACK for %s : %i"%(hostname, value))
+    if hostname in knownLights : knownLights[hostname].ack = value
     else : 
         print("WARNING : received ACK from unknown device %s at %s" %(hostname, IPaddress.url))
+        handleID(address, args, tags, IPaddress)
 
 def handleID(address, args, tags, IPaddress):
-    global knownDevices
+    global knownLights
     ip = IPaddress.url.split("//")[1].split(":")[0] # retrieve IP from an url like osc.udp://10.0.0.12:35147/
     hostname = str(args[0])
-    if hostname not in knownDevices : print("added new device "+hostname)
+    if hostname not in knownLights : print("added new device "+hostname)
     else : print("updated device "+hostname)
-    knownDevices.update({hostname:Light(hostname, ip)})
+    knownLights.update({hostname:Light(hostname, ip)})
 
 def setLight(hostname, value):
     value = int(value)
-    if hostname in knownDevices :
-        liblo.send((knownDevices[hostname].ip, OSCsendPort), "/"+hostname+"/light", value)
+    if hostname in knownLights : knownLights[hostname].setLight(value)
     else : print("ERROR : cannot set light value on unknown device "+hostname)
 
 # TODO : implement a logarithmic fade
@@ -65,9 +86,17 @@ def fadeLight(hostname, fadeFrom, fadeTo, duration) :
     delay /= 2 # why ??? it does works but why ??
     currentValue = fadeFrom
     for steps in range(stepsCount):
-        setLight(hostname, currentValue)
-        time.sleep(delay)
+        Timer(delay*steps, setLight, args=[hostname, currentValue]).start()
         currentValue = currentValue+1 if fadeFrom<fadeTo else currentValue-1
+
+def lightShow(hostname, fadeTime, totalTime=False):
+    timeStarted = time.time()
+    while runOSCserver :
+        if totalTime and time.time() - timeStarted > totalTime : return
+        fadeLight(hostname, 0, 100, fadeTime)
+        time.sleep(fadeTime/2)
+        fadeLight(hostname, 100, 0, fadeTime)
+        time.sleep(fadeTime/2)
 
 def broadcastOSC(OSCaddress, OSCport, OSCargs=None):
     """
@@ -78,6 +107,12 @@ def broadcastOSC(OSCaddress, OSCport, OSCargs=None):
         ip = "10.0.0."+str(i)
         if OSCargs : liblo.send((ip, OSCport), OSCaddress, *OSCargs)
         else : liblo.send((ip, OSCport), OSCaddress)
+
+def validateLights():
+    while runValidation :
+        for light in knownLights.values() : light.validate()
+        time.sleep(0.001)
+    print("  closing the validation thread")
 
 def listenToOSC():
     try:
@@ -97,19 +132,24 @@ def listenToOSC():
 
 if __name__ == '__main__':
 
-    print("OSC server starting...")
+    print("starting the OSC server thread...")
     oscServerThread = Thread(target=listenToOSC)
     oscServerThread.start()
+
+    print("starting the validation thread...")
+    validationThread = Thread(target=validateLights)
+    validationThread.start()
 
     print("broadcasting /whoIsThere")
     broadcastOSC("/whoIsThere", OSCsendPort)
     time.sleep(1) # gives ESPs time to respond
 
-    if "light_84F3EB583BDB" in knownDevices :
-        print("fading light")
-        fadeLight("light_84F3EB583BDB", 0, 1024, 10)
+    if "light_68C63AE14A51" in knownLights :
+        print("starting test lightshow on light_68C63AE14A51")
+        Thread(target=lightShow, args=("light_68C63AE14A51", 5)).start()
 
     try : 
         while True : time.sleep(.1)
     except KeyboardInterrupt :
         runOSCserver = False
+        runValidation = False
