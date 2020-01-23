@@ -42,7 +42,7 @@ compiled with ESP8266 v2.4.1 and OSC 1.3.3
 #define OTA_TIMEOUT 5 // time in seconds after which the device resume it's normal activity if no OTA firmware is comming 
 #define DIMMER_PWM D1
 #define DIMMER_ZC D2
-#define MIN_FADING_STEP_DURATION 3 // time in ms after which the fading is updated
+#define MIN_FADING_STEP_DURATION 5 // minimum time in ms after which the fading can be updated
 #define FADE_INTERRUPTS_ANOTHER true // if set to false, creating a new fade will be ignored if another fading is already in progress
 #define SERIAL_DEBUG
 #define NO_ROUTER
@@ -81,8 +81,9 @@ struct Fade{
   unsigned int start; 
   unsigned int stop;
   unsigned int duration;
-  unsigned int stepDuration;
   unsigned int stepCount;
+  unsigned int stepDuration;
+  unsigned int stepIncrement;
   unsigned int currentStep;
   unsigned long nextStepTimer;
   unsigned long startedTimer;
@@ -155,8 +156,8 @@ void loop() {
         value = constrain(value, 0, 100);
         setLight(value);
         } else if (msg->fullMatch(OSCfadeAddress) && msg->isInt(0) && msg->isInt(1) && msg->isInt(2)) { 
-        const int start = msg->getInt(0);
-        const int stop = msg->getInt(1);
+        const int start = constrain(msg->getInt(0),0,100);
+        const int stop = constrain(msg->getInt(1),0,100);
         const int duration = msg->getInt(2);
         startFade(start, stop, duration);
       } else if ( msg->fullMatch(OSCOTA) ) {
@@ -189,17 +190,26 @@ void setLight(int value) {
   #ifndef USE_BUILTIN_LED
   dimmer.setPower(value);
   #else
-  analogWrite(LED_BUILTIN, map(value, 0, 100, 0, 255));
+  analogWrite(LED_BUILTIN, 100-value);
   #endif
   lastValueUsed = value;
   sendACK();
 }
 
 void startFade(unsigned int start, unsigned int stop, unsigned int duration){
+  if (start == stop) return;
   if (!fade.isActive || FADE_INTERRUPTS_ANOTHER){
     fade.isInverted = (start>stop);
     fade.stepCount = (fade.isInverted) ? start-stop : stop-start;
     fade.stepDuration = duration/fade.stepCount;
+    if (fade.stepDuration < MIN_FADING_STEP_DURATION){
+      fade.stepDuration = MIN_FADING_STEP_DURATION;
+      fade.stepIncrement = MIN_FADING_STEP_DURATION / ((float) duration/fade.stepCount);
+      fade.stepCount = fade.stepCount/fade.stepIncrement;
+      debugPrint("stepIncrement : "); debugPrintln(fade.stepIncrement);
+      debugPrint("stepcount : "); debugPrintln(fade.stepCount);
+    }
+    else fade.stepIncrement = 1;
     if (fade.isInverted) setLight(stop);
     else setLight(start);
     fade.isActive = true;
@@ -214,6 +224,7 @@ void startFade(unsigned int start, unsigned int stop, unsigned int duration){
     debugPrint(" in "); debugPrint(duration); debugPrintln(" ms");
     debugPrint("\tstep count :");debugPrintln(fade.stepCount);
     debugPrint("\tstep duration : "); debugPrintln(fade.stepDuration);
+    debugPrint("\tstep increment : "); debugPrintln(fade.stepIncrement);
     debugPrint("\tcurrent step :"); debugPrintln(fade.currentStep);
     debugPrint("\tcurrentValue : "); 
     if(fade.isInverted) debugPrintln(stop);
@@ -230,8 +241,9 @@ void handleFade(){
   }
   if (millis() >= fade.nextStepTimer){
     unsigned int currentValue = 0;
-    if (fade.isInverted) currentValue = fade.start - fade.currentStep;
-    else currentValue = fade.start + fade.currentStep;
+    if (fade.isInverted) currentValue = fade.start - fade.currentStep*fade.stepIncrement;
+    else currentValue = fade.start + fade.currentStep*fade.stepIncrement;
+    if (fade.stop - currentValue<fade.stepIncrement) currentValue = fade.stop;
     setLight(currentValue);
     fade.currentStep++;
     fade.nextStepTimer = fade.startedTimer+fade.stepDuration*fade.currentStep ;
