@@ -43,7 +43,7 @@ compiled with ESP8266 v2.4.1 and OSC 1.3.3
 #define DIMMER_PWM D1
 #define DIMMER_ZC D2
 #define MIN_FADING_STEP_DURATION 5 // minimum time in ms after which the fading can be updated
-#define FADE_INTERRUPTS_ANOTHER true // if set to false, creating a new fade will be ignored if another fading is already in progress
+#define FADE_INTERRUPTS_ANOTHER false // if set to false, creating a new fade will be ignored if another fading is already in progress
 #define SERIAL_DEBUG
 #define NO_ROUTER
 #define USE_BUILTIN_LED // if undef, will use RBDdimmer instead
@@ -248,6 +248,7 @@ void startFade(unsigned int start, unsigned int stop, unsigned int duration){
     fade.currentStep = 0;
     fade.start = start;
     fade.stop = stop;
+    fade.duration = duration;
     debugPrint("Beginning ");
     if(fade.isInverted) debugPrint("inverted");
     debugPrint(" fade from ");debugPrint(fade.start); debugPrint(" to "); debugPrint(fade.stop);

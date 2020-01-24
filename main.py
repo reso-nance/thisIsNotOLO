@@ -41,14 +41,29 @@ class Light:
         liblo.send((self.ip, OSCsendPort), "/"+self.hostname+"/light", self.value)
         self.validationTime = time.time()
         self.validated = False
+
+    def startFade(self, start, end, duration):
+        constrain = lambda x : max(0, min(int(x), 100))
+        start, end = constrain(start), constrain(end)
+        self.value = [start, end, duration]
+        if start == end : 
+            print("ERROR unable to send fade : same start and end")
+            return
+        print("starting fade on ", self.hostname, " : start ", start, "end", end, "duration", duration)
+        liblo.send((self.ip, OSCsendPort), "/"+self.hostname+"/fade", start, end, duration)
+        self.validationTime = time.time()
+        self.validated = False
     
     def validate(self):
         if not self.validated and time.time() - self.validationTime > validationTime :
             if self.ack == self.value : 
                 self.validated = True
-                print("validated")
+                print("validated :", self.value)
             else : 
-                self.setLight(self.value)
+                if isinstance(self.value, int) : self.setLight(self.value)
+                elif isinstance(self.value, list) :
+                    print("trying to validate a fade :", self.value)
+                    self.startFade(*self.value)
                 print("sending again")
 
 
@@ -59,7 +74,10 @@ def unknownOSC(address, args, tags, IPaddress):
 
 def handleAck(address, args, tags, IPaddress):
     global knownLights
-    hostname, value = args
+    if address == "/ACK" : hostname, value = args
+    if address == "/fadeACK" :
+        hostname = args[0]
+        value = args[1:]
     # print("got ACK for %s : %i"%(hostname, value))
     if hostname in knownLights : knownLights[hostname].ack = value
     else : 
@@ -80,25 +98,27 @@ def setLight(hostname, value):
     if hostname in knownLights : knownLights[hostname].setLight(value)
     else : print("ERROR : cannot set light value on unknown device "+hostname)
 
-def fadeLight(hostname, fadeFrom, fadeTo, duration, exp=2, delay=0.05) :
-    reverse = True if fadeFrom > fadeTo else False
-    if reverse : fadeFrom, fadeTo = fadeTo, fadeFrom
-    stepsCount = int(duration/delay)
-    values = [i**exp for i in range(0,stepsCount)]
-    mapToRange = lambda x, a, b, c, d : int((x-a)/(b-a)*(d-c)+c)
-    values = [mapToRange(x,min(values), max(values), fadeFrom, fadeTo) for x in values]
-    if reverse : values.reverse()
-    for i in range(len(values)) :
-        Timer(delay*i+1, setLight, args=[hostname, values[i]]).start()
+# deprecated since fades are generated on the ESP8266 directly
+# def fadeLight(hostname, fadeFrom, fadeTo, duration, exp=2, delay=0.05) :
+#     reverse = True if fadeFrom > fadeTo else False
+#     if reverse : fadeFrom, fadeTo = fadeTo, fadeFrom
+#     stepsCount = int(duration/delay)
+#     values = [i**exp for i in range(0,stepsCount)]
+#     mapToRange = lambda x, a, b, c, d : int((x-a)/(b-a)*(d-c)+c)
+#     values = [mapToRange(x,min(values), max(values), fadeFrom, fadeTo) for x in values]
+#     if reverse : values.reverse()
+#     for i in range(len(values)) :
+#         Timer(delay*i+1, setLight, args=[hostname, values[i]]).start()
 
 def lightShow(hostname, fadeTime, totalTime=False):
     timeStarted = time.time()
     while runOSCserver :
         if totalTime and time.time() - timeStarted > totalTime : return
-        fadeLight(hostname, 0, 100, fadeTime)
-        time.sleep(fadeTime)
-        fadeLight(hostname, 100, 0, fadeTime)
-        time.sleep(fadeTime)
+        if hostname in knownLights :
+            knownLights[hostname].startFade(0, 100, fadeTime)
+            time.sleep(fadeTime/1000+.1)
+            knownLights[hostname].startFade(100, 0, fadeTime)
+            time.sleep(fadeTime/1000+.1)
 
 def broadcastOSC(OSCaddress, OSCport, OSCargs=None):
     """
@@ -125,6 +145,7 @@ def listenToOSC():
         raise SystemError
 
     server.add_method("/ACK", None, handleAck)
+    server.add_method("/fadeACK", None, handleAck)
     server.add_method("/myID", None, handleID)
     server.add_method(None, None, unknownOSC)
     
@@ -146,12 +167,18 @@ if __name__ == '__main__':
     broadcastOSC("/whoIsThere", OSCsendPort)
     time.sleep(1) # gives ESPs time to respond
 
-    if "light_68C63AE14A51" in knownLights :
-        print("starting test lightshow on light_68C63AE14A51")
-        Thread(target=lightShow, args=("light_68C63AE14A51", 5)).start()
+    if "light_3C71BF264A9B" in knownLights :
+        print("starting test lightshow on light_3C71BF264A9B")
+        Thread(target=lightShow, args=("light_3C71BF264A9B", 2000)).start()
 
     try : 
-        while True : time.sleep(.1)
+        lightShowStarted = False
+        while True : 
+            time.sleep(.1)
+            if "light_3C71BF264A9B" in knownLights and not lightShowStarted:
+                print("starting test lightshow on light_3C71BF264A9B")
+                Thread(target=lightShow, args=("light_3C71BF264A9B", 2000)).start()
+                lightShowStarted = True
     except KeyboardInterrupt :
         runOSCserver = False
         runValidation = False
