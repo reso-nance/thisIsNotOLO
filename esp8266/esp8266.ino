@@ -48,6 +48,7 @@ compiled with ESP8266 v2.4.1 and OSC 1.3.3
 #define NO_ROUTER
 #define USE_BUILTIN_LED // if undef, will use RBDdimmer instead
 
+static const float exponent = 2.0f; // used to produce exponential fades
 const String MACaddress=WiFi.macAddress();
 String hostname="light_"+MACaddress;
 #ifdef NO_ROUTER
@@ -89,7 +90,7 @@ struct Fade{
   unsigned long startedTimer;
 };
 
-Fade fade = {false, false, 0, 0, 0, 0, 0, 0, 0, 0};
+Fade fade = {false, false, 0, 0, 0, 0, 0, 0, 0, 0}; // default inactive fade
 
 #ifdef SERIAL_DEBUG
   #define debugPrint(x)  Serial.print (x)
@@ -111,7 +112,7 @@ void setup() {
   hostname.replace(":","");
   OSCprefix = "/"+hostname;
   char hostnameAsChar[hostname.length()+1];
-  hostname.toCharArray(hostnameAsChar, hostname.length()+1);
+  hostname.toCharArray(hostnameAsChar, hostname.length()+11001);
   #ifdef SERIAL_DEBUG
   Serial.begin(115200);
   #endif
@@ -155,6 +156,7 @@ void loop() {
         int value = msg->getInt(0);
         value = constrain(value, 0, 100);
         setLight(value);
+        sendACK();
         } else if (msg->fullMatch(OSCfadeAddress) && msg->isInt(0) && msg->isInt(1) && msg->isInt(2)) { 
         const int start = constrain(msg->getInt(0),0,100);
         const int stop = constrain(msg->getInt(1),0,100);
@@ -185,27 +187,55 @@ void sendACK() {
   delete(msg);
 }
 
+void sendFadeACK() {
+  char hostnameAsChar[hostname.length()+1];
+  hostname.toCharArray(hostnameAsChar, hostname.length()+1);
+  OSCMessage* msg = new OSCMessage("/fadeACK");
+  msg->add(hostnameAsChar); // Hostname
+  msg->add((int) fade.start); //start value
+  msg->add((int) fade.stop); // stop value
+  msg->add((int) fade.duration); //duration in ms
+  sendOscToServer(msg);
+  debugPrintln("sent fade ACK");
+  delete(msg);
+}
+
+unsigned int expMap(unsigned int value, unsigned int start, unsigned int stop){
+  float num=0;
+  float denum=0;
+  if (start < stop) {
+    num = pow(value, exponent) - pow(start, exponent);
+    denum = pow(stop, exponent) - pow(start, exponent);
+  }
+  else {
+    num = pow(value, exponent) - pow(stop, exponent);
+    denum = pow(start, exponent) - pow(stop, exponent);
+  }
+  float result = num/denum;
+  //unsigned int result = 100* (pow(value, exponent) - pow(start, exponent))/(pow(stop, exponent)-pow(start, exponent));
+  return 100*result;
+}
+
 void setLight(int value) {
   debugPrint("set light to "); debugPrintln(value);
   #ifndef USE_BUILTIN_LED
   dimmer.setPower(value);
   #else
-  analogWrite(LED_BUILTIN, 100-value);
+  analogWrite(LED_BUILTIN, 100-value); // BUILTIN_LED is sinked so 0 = bright and 100 = dark
   #endif
   lastValueUsed = value;
-  sendACK();
 }
 
 void startFade(unsigned int start, unsigned int stop, unsigned int duration){
-  if (start == stop) return;
-  if (!fade.isActive || FADE_INTERRUPTS_ANOTHER){
+  if (start == stop) return; // or it will divide by zero sooner or later
+  if (!fade.isActive || FADE_INTERRUPTS_ANOTHER){ // if another fade is in progress, we'll either replace it or ignore this one
     fade.isInverted = (start>stop);
     fade.stepCount = (fade.isInverted) ? start-stop : stop-start;
     fade.stepDuration = duration/fade.stepCount;
-    if (fade.stepDuration < MIN_FADING_STEP_DURATION){
-      fade.stepDuration = MIN_FADING_STEP_DURATION;
-      fade.stepIncrement = MIN_FADING_STEP_DURATION / ((float) duration/fade.stepCount);
-      fade.stepCount = fade.stepCount/fade.stepIncrement;
+    if (fade.stepDuration < MIN_FADING_STEP_DURATION){ // very short fades forces us to increment by more than one each time
+      fade.stepDuration = MIN_FADING_STEP_DURATION; 
+      fade.stepIncrement = MIN_FADING_STEP_DURATION / ((float) duration/fade.stepCount); // will never be exact, handled below
+      fade.stepCount = fade.stepCount/fade.stepIncrement; // bigger increments = lower stepCount
       debugPrint("stepIncrement : "); debugPrintln(fade.stepIncrement);
       debugPrint("stepcount : "); debugPrintln(fade.stepCount);
     }
@@ -214,7 +244,7 @@ void startFade(unsigned int start, unsigned int stop, unsigned int duration){
     else setLight(start);
     fade.isActive = true;
     fade.startedTimer = millis();
-    fade.nextStepTimer = fade.startedTimer+fade.stepDuration;
+    fade.nextStepTimer = fade.startedTimer+fade.stepDuration; // prepare for the handleFade function
     fade.currentStep = 0;
     fade.start = start;
     fade.stop = stop;
@@ -229,6 +259,7 @@ void startFade(unsigned int start, unsigned int stop, unsigned int duration){
     debugPrint("\tcurrentValue : "); 
     if(fade.isInverted) debugPrintln(stop);
     else debugPrintln(start);
+    sendFadeACK();
   }
 }
 
@@ -239,11 +270,12 @@ void handleFade(){
     debugPrintln("fading finished");
     return;
   }
-  if (millis() >= fade.nextStepTimer){
+  if (millis() >= fade.nextStepTimer){// time to update the light
     unsigned int currentValue = 0;
     if (fade.isInverted) currentValue = fade.start - fade.currentStep*fade.stepIncrement;
     else currentValue = fade.start + fade.currentStep*fade.stepIncrement;
-    if (fade.stop - currentValue<fade.stepIncrement) currentValue = fade.stop;
+    if (fade.stop - currentValue<fade.stepIncrement) currentValue = fade.stop; // we are very near the final value but we will overshoot at the next loop
+    currentValue = expMap(currentValue, fade.start, fade.stop);// this will map the value exponentially
     setLight(currentValue);
     fade.currentStep++;
     fade.nextStepTimer = fade.startedTimer+fade.stepDuration*fade.currentStep ;
@@ -304,13 +336,10 @@ void connectToWifi(const char *Hostname, const char* ssid, const char* passphras
     debugPrintln("\tfailed to connect, retrying in 1s");
     delay(1000);
   }
-  // if ( WiFi.waitForConnectResult() == WL_CONNECTED ) {
     debugPrintln("\tconnected :");
     debugPrint("\tlocal IP :"); debugPrintln(WiFi.localIP());
     ArduinoOTA.setPort(8266); //default OTA port
     ArduinoOTA.setHostname(Hostname);// No authentication by default, can be set with : ArduinoOTA.setPassword((const char *)"passphrase");
     ArduinoOTA.begin();
     debugPrintln("\tlistening for OTA on port 8266");
-  // }
-  // else debugPrintln("  unable to connect !");
 }
