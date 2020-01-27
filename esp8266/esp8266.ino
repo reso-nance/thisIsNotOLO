@@ -240,8 +240,7 @@ void startFade(unsigned int start, unsigned int stop, unsigned int duration){
       debugPrint("stepcount : "); debugPrintln(fade.stepCount);
     }
     else fade.stepIncrement = 1;
-    if (fade.isInverted) setLight(stop);
-    else setLight(start);
+    setLight(start);
     fade.isActive = true;
     fade.startedTimer = millis();
     fade.nextStepTimer = fade.startedTimer+fade.stepDuration; // prepare for the handleFade function

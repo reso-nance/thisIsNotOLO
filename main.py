@@ -18,14 +18,14 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 #  
-import liblo, time
+import liblo, time, sys
 from threading import Thread, Timer
 
 knownLights = {}
 OSCsendPort = 8000
 OSClistenPort = 9000
 runOSCserver, runValidation = True, True
-validationTime = .1 # time in s after which a light value will be sent again if no ACK has been received
+validationTime = .2 # time in s after which a light value will be sent again if no ACK has been received
 
 class Light:
     def __init__(self, hostname, ip):
@@ -129,6 +129,11 @@ def broadcastOSC(OSCaddress, OSCport, OSCargs=None):
         ip = "10.0.0."+str(i)
         if OSCargs : liblo.send((ip, OSCport), OSCaddress, *OSCargs)
         else : liblo.send((ip, OSCport), OSCaddress)
+        i = int(i/10)
+        sys.stdout.write("\r{0}>".format("="*i))
+        sys.stdout.flush()
+        time.sleep(.01)
+    print("done")
 
 def validateLights():
     while runValidation :
@@ -163,7 +168,7 @@ if __name__ == '__main__':
     validationThread = Thread(target=validateLights)
     validationThread.start()
 
-    print("broadcasting /whoIsThere")
+    print("broadcasting /whoIsThere...")
     broadcastOSC("/whoIsThere", OSCsendPort)
     time.sleep(1) # gives ESPs time to respond
 
