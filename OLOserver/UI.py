@@ -24,6 +24,7 @@ from flask import Flask, g, render_template, redirect, request
 from flask_socketio import SocketIO, emit
 # ~ import os, logging, subprocess, eventlet
 import os, logging, subprocess, urllib.parse, json
+import sequences
 # ~ eventlet.monkey_patch() # needed to make eventlet work asynchronously with socketIO, 
 
 mainTitle = "OLO"
@@ -56,5 +57,20 @@ def onConnect():
 @socketio.on('disconnect', namespace='/home')
 def onDisconnect():
     print("client disconnected")
+
+@socketio.on('newSequence', namespace='/home')
+def receivedNewSequence(sequenceID, jsSequence):
+    print("new sequence received")
+    sequences.addNew(sequenceID, jsSequence)
+
+@socketio.on('removeSequence', namespace='/home')
+def removeSequence(sequenceID):
+    print("removing sequence", sequenceID)
+    sequences.activeSequences.pop(sequenceID)
+
+@socketio.on('clearAllSequences', namespace='/home')
+def clearAllSequences():
+    print("clearing all sequences")
+    sequences.activeSequences = {}
     
 # --------------- FUNCTIONS ----------------

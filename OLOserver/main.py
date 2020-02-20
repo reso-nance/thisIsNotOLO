@@ -21,29 +21,35 @@
 #  
 
 from threading import Thread
-import eventlet, atexit, signal, os
-import OSC, UI
+# import eventlet, atexit, signal, os
+import atexit, signal, os
+import OSC, UI, sequences
 
-flaskBind = "10.0.0.1"
+# flaskBind = "10.0.0.1"
+flaskBind = "OLOserver.local"
 HTTPlisteningPort = 8080
 
 oscServerThread = None
 
 def exitCleanly(*args):
+    print()
     print("exiting OSCserver thread")
     OSC.listenToOSC = False
+    print("exiting playThread...")
+    sequences.isPlaying = False
     raise SystemExit
 
 if __name__ == '__main__':
     signal.signal(signal.SIGTERM, exitCleanly) # register this exitCleanly function to be called on sigterm
     atexit.register(exitCleanly) # idem when called from within this script
     # ~ eventlet.spawn(OSCserver.listen)
-    oscServerThread = Thread(target=OSC.listen)
-    oscServerThread.start()
+    # oscServerThread = Thread(target=OSC.listen)
+    # oscServerThread.start()
     # print("starting check disconnect thread...")
     # Thread(target=clients.checkDisconnected).start()
     print("starting up webserver on %s:%i..." %(flaskBind, HTTPlisteningPort))
-    eventlet.spawn(UI.socketio.run, UI.app, {"host":flaskBind, "port":HTTPlisteningPort})
+    # eventlet.spawn(UI.socketio.run, UI.app, {"host":flaskBind, "port":HTTPlisteningPort})
+    sequences.play()
     try: UI.socketio.run(UI.app, host=flaskBind, port=HTTPlisteningPort)  # Start the asynchronous web server (flask-socketIO)
     except KeyboardInterrupt : exitCleanly()
     

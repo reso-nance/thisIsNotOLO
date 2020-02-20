@@ -47,10 +47,15 @@ compiled with ESP8266 v2.4.1 and OSC 1.3.3
 #define SERIAL_DEBUG
 #define NO_ROUTER
 #define USE_BUILTIN_LED // if undef, will use RBDdimmer instead
+#define FIXED_HOSTNAME "light0"
 
 static const float exponent = 2.0f; // used to produce exponential fades
+#ifdef FIXED_HOSTNAME
+const String hostname = FIXED_HOSTNAME;
+#else
 const String MACaddress=WiFi.macAddress();
 String hostname="light_"+MACaddress;
+#endif
 #ifdef NO_ROUTER
 static char* SSID = "ZINC 2.4";
 static char* PSK = "zincZN30!";
@@ -109,7 +114,9 @@ void setup() {
   analogWriteRange(100);
   digitalWrite(LED_BUILTIN, HIGH);
   #endif
+  #ifndef FIXED_HOSTNAME
   hostname.replace(":","");
+  #endif
   OSCprefix = "/"+hostname;
   char hostnameAsChar[hostname.length()+1];
   hostname.toCharArray(hostnameAsChar, hostname.length()+1);

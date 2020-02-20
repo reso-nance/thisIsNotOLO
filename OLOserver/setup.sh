@@ -14,10 +14,11 @@ sudo apt-get update||exit 1
 sudo apt-get -y dist-upgrade||exit 1
 echo "
 installing .deb packages :"
-sudo apt-get -y --fix-missing install python3-pip python3-dev liblo-dev libasound2-dev libjack-jackd2-dev portaudio19-dev ||exit 1
+sudo apt-get -y --fix-missing install python3-pip python3-dev liblo-dev libasound2-dev libjack-jackd2-dev portaudio19-dev libatlas-base-dev dnsmasq ||exit 1
 echo "
 installing pip packages :"
 pip3 install Cython||exit 2
+pip3 install numpy||exit 2
 pip3 install pyliblo ||exit 2
 pip3 install flask||exit 2
 pip3 install flask-socketio||exit 2
@@ -39,6 +40,7 @@ systemctl disable bluetooth.service
 
 echo "
 ----------------configuring network :----------------
+"
 echo "  setting up the wifi country as FR..."
 sudo raspi-config nonint do_wifi_country FR
 echo "  setting hostname to $thisClientHostname..."
@@ -54,6 +56,7 @@ pairwise=CCMP
 auth_alg=OPEN
 }
 '>>/etc/wpa_supplicant/wpa_supplicant.conf
+
 echo "  configuring IP forwarding"
  if [ -f /etc/sysctl.conf ]; then cp /etc/sysctl.conf /etc/sysctl.conf.orig; fi
 # uncomment net.ipv4.ip_forward=1
@@ -77,15 +80,17 @@ echo "/etc/rc.local:"
 cat /etc/rc.local
 
 echo "adding redirections from bergen.olo to localhost"
+systemctl stop dnsmasq
 echo "address=/bergen.olo/127.0.0.1
 address=/www.bergen.olo/127.0.0.1
 " >> /etc/dnsmasq.d/bergen.olo
+systemctl start dnsmasq
 
 echo "
 --------------setting up script autolaunch:--------------
 "
-echo"
-su pi -c 'cd /home/pi/OLOserver && python3 main.py&'
+echo "
+su pi -c 'cd $thisScriptDir && python3 main.py&'
 ">>/etc/rc.local
 
 echo "

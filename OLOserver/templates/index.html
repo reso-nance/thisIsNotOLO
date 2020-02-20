@@ -4,19 +4,39 @@
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="serveur web du projet 'Paysage de Propagation'">
+    <meta name="description" content="serveur web du projet OLO">
     <meta name="author" content="reso-nance.org">
 <!-- TODO 
     <link rel="icon" href="../../static/favicon.png">
 -->
     <!-- Bootstrap CSS -->
     <script src="../static/js/jquery-3.3.1.min.js"></script>
+    <script>
+      // jQuery extension disabling selection to avoid longpress issues on mobile
+      $.fn.extend({ 
+          disableSelection: function() { 
+              this.each(function() { 
+                  if (typeof this.onselectstart != 'undefined') {
+                      this.onselectstart = function() { return false; };
+                  } else if (typeof this.style.MozUserSelect != 'undefined') {
+                      this.style.MozUserSelect = 'none';
+                  } else {
+                      this.onmousedown = function() { return false; };
+                  }
+              }); 
+          } 
+      });
+
+      $(document).ready(function() {
+          $('*').disableSelection();            
+      });
+  </script>
     <script src="../static/js/popper.min.js"></script>
     <script src="../static/js/socket.io.min.js"></script>
     <script src="../static/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="../static/css/custom.css">
     
-    <title>Paysage de propagation</title>
+    <title>bergen.olo</title>
     
   </head>
   <body>
@@ -24,24 +44,29 @@
 
       <h1>Beta</h1>
       <div class="row"></div>
+        <h2 class="unselectable window" data-id="0">fenêtre1</h2>
         <div class="btn-group">
-          <button type="button" data-id="1" class="btn btn-lg btn-primary window">fenêtre 1</button>
-          <button type="button" data-id="2" class="btn btn-lg btn-primary window">fenêtre 2</button>
-          <button type="button" data-id="3" class="btn btn-lg btn-primary window">fenêtre 3</button>
-          <button type="button" data-id="4" class="btn btn-lg btn-primary window">fenêtre 4</button>
+          
+          <!-- <img src="/static/imgs/one.svg" height="200px" width="200px" class="window" data-id="1" /> -->
+          <button type="button" data-id="0" class="btn btn-lg btn-primary window">fenêtre 1</button>
+          <button type="button" data-id="1" class="btn btn-lg btn-primary window">fenêtre 2</button>
+          <button type="button" data-id="2" class="btn btn-lg btn-primary window">fenêtre 3</button>
+          <button type="button" data-id="3" class="btn btn-lg btn-primary window">fenêtre 4</button>
         </div> 
       </div>
       <div class="row">
         <div class="btn-group">
-          <button type="button" data-id="5" class="btn btn-lg btn-primary window">fenêtre 5</button>
-          <button type="button" data-id="6" class="btn btn-primary window">fenêtre 6</button>
-          <button type="button" data-id="7" class="btn btn-primary window">fenêtre 7</button>
-          <button type="button" data-id="8" class="btn btn-primary window">fenêtre 8</button>
+          <button type="button" data-id="4" class="btn btn-lg btn-primary window">fenêtre 5</button>
+          <button type="button" data-id="5" class="btn btn-primary window">fenêtre 6</button>
+          <button type="button" data-id="6" class="btn btn-primary window">fenêtre 7</button>
+          <button type="button" data-id="7" class="btn btn-primary window">fenêtre 8</button>
         </div> 
       </div>
       <div class="btn-group">
-        <button type="button" id="rec" class="btn btn-lg btn-danger">rec</button>
+        <button type="button" id="rec" class="btn btn-lg btn-danger">startRec</button>
         <button type="button" id="play" class="btn btn-success">play</button>
+        <button type="button" id="remove" class="btn btn-success">remove</button>
+        <button type="button" id="clear" class="btn btn-success">clear</button>
       </div>
 
     </div>

@@ -26,6 +26,7 @@ OSCsendPort = 8000
 OSClistenPort = 9000
 runOSCserver, runValidation = True, True
 validationTime = .2 # time in s after which a light value will be sent again if no ACK has been received
+lightAdresses = [str(i)+".local" for i in range(8)]
 
 class Light:
     def __init__(self, hostname, ip):
@@ -134,6 +135,12 @@ def broadcastOSC(OSCaddress, OSCport, OSCargs=None):
         sys.stdout.flush()
         time.sleep(.01)
     print("done")
+
+def sendValueToLight(value, lightID):
+    value = min(100, max(value, 0))
+    # FIXME debug
+    liblo.send(("10.0.120.85", OSCsendPort), "/light%i/light"%lightID, value)
+    print("sent /light%i/light"%lightID, value)
 
 def validateLights():
     while runValidation :
