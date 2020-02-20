@@ -112,7 +112,7 @@ void setup() {
   hostname.replace(":","");
   OSCprefix = "/"+hostname;
   char hostnameAsChar[hostname.length()+1];
-  hostname.toCharArray(hostnameAsChar, hostname.length()+11001);
+  hostname.toCharArray(hostnameAsChar, hostname.length()+1);
   #ifdef SERIAL_DEBUG
   Serial.begin(115200);
   #endif

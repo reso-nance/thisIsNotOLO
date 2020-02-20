@@ -1,0 +1,629 @@
+/* latin-ext */
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: local('Roboto'), local('Roboto-Regular'), url(static/RobotoLatinExt.woff2) format('woff2');
+	unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  }
+  /* latin */
+  @font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: local('Roboto'), local('Roboto-Regular'), url(static/RobotoLatin.woff2) format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  
+  @media {
+	(min-width: 375px) and (max-width: 1280px),
+	(min-width: 1280px), 
+	(min-resolution: 192dpi) {
+		 (-webkit-min-device-pixel-ratio: 1)
+	}
+  }
+  
+  body {
+	background-color: #333;
+	font-family: 'Roboto', sans-serif;
+	color: #aaa;
+	margin: 0;
+	padding: 0;
+  }
+
+  /* tool type -------------------------------------------------------------------*/
+
+
+  
+  /* COLONNES  --------------------------------------------------------------------*/
+  
+  .row{
+	  display: -ms-flex;
+	  display: -webkit-flex;
+	  display: flex;
+  }
+  
+  
+  .col{
+	  height:100vh;
+  }
+  
+  .menuLeft{
+  	background-color: #000;
+  	width: 12%;
+  	min-width: 320px;
+
+  }
+
+  .menuMidiFiles{
+  	background-color: #111;
+	width: 12%;
+	min-width: 320px;
+  }
+
+  .header_btn_files{
+  	padding-top: 115px;
+  	width: 100%;
+  	height: 50px;
+  	background-color: #333;
+  }
+  
+  .menuLeft h1{
+  	font-size: 0.75em;
+	text-transform: uppercase;
+  }
+
+  .menuMidiFiles h1, .modal-header h1{
+  	color: #666;
+  	font-size: 0.75em;
+	text-transform: uppercase;
+  }
+  
+  
+  .ContentRight{
+	  background-color: #333;
+	  width: 100%;
+	  
+  }
+  
+  
+  
+  
+  
+  /* MENU GAUCHE --------------------------------------------------------------------*/
+  .logo{
+	  width: 320px;
+	  height: 120px;
+	  background-image: url("../imgs/propagation2.png");
+  }
+
+  .midihead{
+	  width: 320px;
+	  height: 120px;
+	  background-image: url("../imgs/midihead.png");
+  }
+  
+  .btn_gestionfiles{
+  	width: 44px;
+	display: inline-block;
+  }
+
+#form_midifiles{
+	float: right;
+}
+
+#form_audiofiles{
+	float: right;
+}
+  
+  .inputfiles{
+	  opacity: 0.7;	
+	  font-size: 0.9em;
+  }
+  
+  .inputfiles:hover{
+  opacity: 1;	
+  cursor:pointer;
+  }
+  
+button{
+	padding:0;
+}
+
+  .btn{
+  	width: 44px;
+  	height: 44px;
+	border: none;
+	cursor: pointer;
+	opacity: 0.5;
+	-webkit-transition: .2s;
+	transition: opacity .1s;
+  }
+
+
+  .btn:hover{
+	  opacity: 1;
+  }
+  
+  .btn_power{
+	  position: relative;
+	  width: 44px;
+	  height: 44px;
+	  background-image: url("../imgs/btn_power.png");
+  }
+
+
+  .btn_refresh{
+	  position: relative;
+	  width: 44px;
+	  height: 44px;
+	  background-image: url("../imgs/btn_refresh.png");
+  }
+  
+  .btn_showall{
+	  position: relative;
+	  width: 44px;
+	  height: 44px;
+	  background-image: url("../imgs/btn_showall.png");  	
+  }
+  
+  .btn_wavefile{
+	  width: 44px;
+	  height: 44px;
+	  /* background-image: url("../imgs/btn_wavefile.png"); */
+  }
+
+  .btn_wavdispatch{
+	  width: 44px;
+	  height: 44px;
+	  float: right;
+	  background-image: url("../imgs/btn_wavdispatch.png");
+  }
+
+  .btn_closemodal{
+	  width: 44px;
+	  height: 44px;
+	  float: left;
+	  background-image: url("../imgs/btn_closemodal.png");
+  }
+  
+  .btn_midifile{
+	  position: relative;
+	  width: 44px;
+	  height: 44px;
+
+	  /* background-image: url("../imgs/btn_midifile.png"); */
+  }
+  
+  .btn_playmidi{
+	  float: left;
+	  margin-right: 4px; 
+	  width: 44px;
+	  height: 44px;
+	  background-image: url("../imgs/btn_playmidi.png");
+  }  
+
+  .btn_stopmidi{
+	  float: left;
+	  margin-right: 4px; 
+	  width: 44px;
+	  height: 44px;
+	  background-image: url("../imgs/btn_stopmidi.png");
+  }  
+
+  .btn_delmidi{
+	  float: left;
+	  margin-right: 4px; 
+	  width: 44px;
+	  height: 44px;
+	  background-image: url("../imgs/btn_deletemidi.png");
+  }
+
+  /* .btn_playmidi:hover{
+  	content: 'Text affiche lors du hover';
+  } */
+  
+  .bloc-lists{
+  	margin-left: 51px;
+  }
+  
+  .list-group{
+  
+	  font-size: .75em;
+	  padding: 42px 0;
+	  list-style-type: none;
+  }
+
+  .cachelist >li{
+  	margin-bottom: 15px;
+  }
+ 
+ #devices-list >li >a{
+ 	text-transform: uppercase;
+ }
+
+  .cachelist >li >a{
+	  font-weight: 400;
+	  text-decoration: none;
+	  color: #ccc;
+	  padding-bottom: 7px;
+  }
+  
+  .cachelist >li > a:Hover{
+	  text-decoration: none;
+	  color: #fff;
+  }
+  
+  .statuslist{
+	  font-weight: 400;
+	  text-decoration: none;
+	  pointer-events: none;
+	  color: #444;
+  }
+  
+  
+  
+  /* MODULES PAGE DE DROITE --------------------------------------*/
+  .content{
+  
+	  min-height: 0px;
+	  width: 100%;
+	  background-color: #ff6600;
+  }
+  
+  .ui-module-container{
+	  display: flex;
+	  overflow: hidden;
+		height: 135px;
+		padding: 0 0 1px 1px;
+		border-color: #222;
+  }
+  
+  .ui-module-id{
+	  width: 100%;
+  }
+  
+  .ui-module-head{
+	  background-color: #000;
+	  display: flex;
+	  overflow: hidden;
+	  height: 271px;
+	  min-width: 150px;
+	  padding: 7px;
+  }
+  
+  .module-name > h1{
+	  text-transform: uppercase;
+	  font-size: 1.2em;
+	  padding-bottom: 5px;
+  }
+  
+  .module_infos{
+	  padding: 0;
+	  margin: 0;
+  }
+  
+  .module_infos > h1{
+	  text-transform: uppercase;
+	  font-size: .9em;
+  
+  }
+  
+  .module_infos > h3{
+	  text-transform: uppercase;
+	  font-size:0.7em;
+	  line-height: 0.27em;
+  }
+  
+  
+  #midiinfo{
+	  display: inline-block;
+	  width: 55px;
+  
+  }
+  
+  #midinote{
+	  display: inline-block;
+	  width: 20px;
+  
+	  color: #ccffcc;
+	  text-align: center; 
+  }
+  
+  .midinote-editor{
+	  display: inline-block;
+	  background-color: #000;
+	  font-size: .7em;
+	  text-align: center;
+	  color: #ccffcc;
+	  border: none;
+	  width: 20px;
+	  height: 20px;
+  }
+  
+  .modulename-editor{
+	  text-transform: uppercase;
+	  background-color: #000;
+	  font-size: .9em;
+	  padding-bottom: 5px;
+	  color: white;
+	  border: none;
+	  font-weight: bold;
+  /*
+	  width: 20px;
+	  height: 20px;
+  */
+  }
+  
+  
+  .ui-module-details{
+	  background-color: #000;
+	  width: 100%;
+	  padding: 0;
+	  margin: 0 0 0 1px;
+  }
+  
+  .ui-module-vols{
+	  display: flex;
+  }
+  
+  .bloc-vol{
+  
+	  margin: 0 0 1px 0;
+	  padding: 8px 50px;
+  }
+  
+  .bloc-vol>h2{
+	  font-size: 0.9em;
+	  color: #ccc;
+	  text-transform: uppercase;
+	  margin: 0;
+  }
+  
+  /* BTNS ELEMNTS MODULES --------------------------------------*/
+  
+  
+  .ui_btn{
+	  opacity: .5;
+	  -webkit-transition: .2s;
+	  transition: opacity .2s;
+  }
+  
+  .ui_btn:hover{
+	  opacity: 1;
+  }
+  
+  .btns_up{
+	  margin-right: 3px;
+  }
+  
+  .btns_down{
+  
+	  margin-top: 3px;
+  }
+  
+  .btn_play{
+	  width: 39px;
+	  height: 40px;
+	  background-image: url("../imgs/btn_play.png");
+	  background-color: #000;
+	  opacity: .2;
+  }
+  
+  .btn_stop{
+	  width: 39px;
+	  height: 40px;
+	  background-image: url("../imgs/btn_stop.png");
+	  size: 100%;
+	  background-color: #000;
+	  opacity: .2;
+  }
+  
+  .btn_add{
+	  width: 39px;
+	  height: 40px;
+	  background-image: url("../imgs/btn_add.png");
+	  background-color: #000;
+	  opacity: .7;
+  }
+  
+  
+  .btn_delete{
+	  width: 39px;
+	  height: 40px;
+	  background-image: url("../imgs/btn_delete.png");
+	  size: 100%;
+	  background-color: #000;
+	  opacity: .2;
+  }
+  
+  .btn_unfold{
+	  position: relative;
+	  top: 121px;	
+	  width: 12px;
+	  height: 12px;
+	  background-image: url("../imgs/btn_unfold.png");
+	  border: none;
+	  cursor: pointer;
+  }
+  
+  .btn_fold{
+	  position: relative;
+	  top: 121px;	
+	  width: 12px;
+	  height: 12px;
+	  background-image: url("../imgs/btn_fold.png");
+	  border: none;
+	  cursor: pointer;
+  }
+  
+  /* SLIDERS --------------------------------------*/
+  
+  .slider {
+	-webkit-appearance: none;
+	width: 100%;
+	height: 2px;
+	background: #ccc;
+	outline: none;
+	opacity: 0.7;
+	-webkit-transition: .2s;
+	transition: opacity .2s;
+	padding-top: 0;
+  }
+  
+  .slider:hover {
+	opacity: 1;
+  }
+  
+  .slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 12px;
+	height: 12px;
+	background: #0099ff;
+	cursor: pointer;
+  }
+  
+  .slider::-moz-range-thumb {
+	width: 12px;
+	height: 12px;
+	background: #0099ff;
+	cursor: pointer;
+  }
+  
+  /* ------------------------------------------------------------ lists -----------------------*/
+  
+  .wav-list{
+	  margin-top: 7px;
+	  padding: 0px 50px 0 0;
+	  height: 136px;
+	   background-color: #000;
+  }
+  
+  .col2 {
+	  list-style-type: none;
+	  margin: 0;
+		padding: 0;
+		line-height: 0.9em;
+		column-count: 2;
+	  padding: 10px 0px 10px 50px;
+  }
+  
+  .col2>li>a{
+	  font-size: .7em;
+	  font-weight: 400;
+	  text-decoration: none;
+	  color: #333;
+  }
+  
+  
+  
+  .col2>li>a:Hover{
+	  text-decoration: none;
+	  color: #fff;
+  }
+  
+  .unselectedwave{
+	  background-color: #000;
+  }
+  
+  .selectedwave{
+	  background-color: #ccffcc;
+  }
+  
+  .  
+  .unselectedMIDI{
+	  background-color: #000;
+  }
+  
+  .selectedMIDI{
+	  background-color: #ccffcc;
+  }
+  
+  .activated{
+	  opacity: .7;
+  }
+  
+  .unactivated{
+	  opacity: .2;
+  }
+  
+  /* -------------FENETRE MODALE -------------*/
+  
+  #wavDispatch{
+	  display: none;
+	  position: absolute;
+	  top:165px;
+	  left: 640px;
+	  width: 640px;
+	  color: #fff;
+	  margin: 0;
+	  padding: 0;
+	  font-weight: 400;
+	  background-color: rgb(34,34,34);
+  }
+  
+  #wavDispatch h1{
+	  color: #666;
+	  text-transform: uppercase;
+	 
+  }
+
+  #wavDispatch h2{
+  	font-size: 0.7em;
+	  color: #aaa;
+	  text-transform: none;
+	 }
+
+  #wavDispatch h2 span{
+  	 color :#c8fac8;
+  }
+  
+  #wavDispatch #selectedwavefile{
+	  color: #ccffcc;
+  }
+
+#wav-list{
+	margin-bottom: 45px;
+}
+
+#wav-list li{
+  	padding:10px 3px 0 0;
+  }
+  
+  
+  
+  
+  .moduleslist{
+	  
+	  padding-bottom: 12px;
+	  color: #ccc;
+  }
+  
+  .listemodal{
+	  padding: 50px 0;
+  }
+  
+  .listemodal ul{
+	  text-decoration: none;
+	  list-style: none;
+  }
+  
+  .modal-footer{
+	  
+  }
+
+input[type=checkbox]
+{
+  /* Double-sized Checkboxes */
+  -ms-transform: scale(1.5); /* IE */
+  -moz-transform: scale(1.5); /* FF */
+  -webkit-transform: scale(1.5); /* Safari and Chrome */
+  -o-transform: scale(1.5); /* Opera */
+  transform: scale(1.5);
+  margin-right: 10px;
+}
+
+/* Might want to wrap a span around your checkbox text */
