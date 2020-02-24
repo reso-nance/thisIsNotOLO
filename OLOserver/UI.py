@@ -66,7 +66,8 @@ def receivedNewSequence(sequenceID, jsSequence):
 @socketio.on('removeSequence', namespace='/home')
 def removeSequence(sequenceID):
     print("removing sequence", sequenceID)
-    sequences.activeSequences.pop(sequenceID)
+    if sequenceID in sequences.activeSequences : 
+        sequences.activeSequences.pop(sequenceID)
 
 @socketio.on('clearAllSequences', namespace='/home')
 def clearAllSequences():

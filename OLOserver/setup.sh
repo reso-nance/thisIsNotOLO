@@ -1,6 +1,7 @@
 #!/bin/bash
 # This script install dependancies and configure the network for the raspberry pi server
 # usage : bash setup.sh
+#https://trevphil.com/posts/captive-portal
 
 thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 thisClientHostname="OLOserver"
@@ -10,11 +11,11 @@ echo "
 "
 echo "
 updating the system :"
-sudo apt-get update||exit 1
-sudo apt-get -y dist-upgrade||exit 1
+apt-get update||exit 1
+apt-get -y dist-upgrade||exit 1
 echo "
 installing .deb packages :"
-sudo apt-get -y --fix-missing install python3-pip python3-dev liblo-dev libasound2-dev libjack-jackd2-dev portaudio19-dev libatlas-base-dev dnsmasq ||exit 1
+apt-get -y --fix-missing install python3-pip python3-dev liblo-dev libasound2-dev libjack-jackd2-dev portaudio19-dev libatlas-base-dev dnsmasq ||exit 1
 echo "
 installing pip packages :"
 pip3 install Cython||exit 2
@@ -42,18 +43,14 @@ echo "
 ----------------configuring network :----------------
 "
 echo "  setting up the wifi country as FR..."
-sudo raspi-config nonint do_wifi_country FR
+raspi-config nonint do_wifi_country FR
 echo "  setting hostname to $thisClientHostname..."
 raspi-config nonint do_hostname "$thisClientHostname"
-echo "  adding malinette network to wifi access points..."
+echo "  adding bergen.olo network to wifi access points..."
 echo '
 network={
-ssid="malinette"
-psk="malinette666"
-proto=RSN
-key_mgmt=WPA-PSK
-pairwise=CCMP
-auth_alg=OPEN
+   ssid="bergen.olo"
+   key_mgmt=NONE
 }
 '>>/etc/wpa_supplicant/wpa_supplicant.conf
 
@@ -66,6 +63,7 @@ echo "  configuring IP forwarding"
  iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 8080
 # same for localhost/loopback (not needed for now)
  iptables -t nat -I OUTPUT -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-ports 8080
+#  iptables -t nat -I OUTPUT -p tcp -d 10.0.0.0/24 --dport 80 -j REDIRECT --to-ports 8080
  if [ -f /etc/iptables.ipv4.nat ]; then cp /etc/iptables.ipv4.nat /etc/iptables.ipv4.nat.orig; fi
  sh -c "iptables-save > /etc/iptables.ipv4.nat"
  echo "/etc/iptables.ipv4.nat:"
@@ -81,8 +79,7 @@ cat /etc/rc.local
 
 echo "adding redirections from bergen.olo to localhost"
 systemctl stop dnsmasq
-echo "address=/bergen.olo/127.0.0.1
-address=/www.bergen.olo/127.0.0.1
+echo "address=/#/127.0.0.1
 " >> /etc/dnsmasq.d/bergen.olo
 systemctl start dnsmasq
 
@@ -101,4 +98,3 @@ echo "
 "
 sleep 5
 reboot
-

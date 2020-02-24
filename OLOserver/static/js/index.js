@@ -52,6 +52,20 @@ $( document ).ready(function() {
             socket.emit("clearAllSequences");
      });
 
+    $(document).on('touchstart', '.window', function(event){
+        event.preventDefault();
+        const windowID = $(event.target).attr("data-id");
+        console.log("windows clicked : ", windowID);
+        recordedSequence.push([Date.now()-timeStarted, windowID, 100]);
+    });
+
+    $(document).on('touchend', '.window', function(event){
+        event.preventDefault();
+        const windowID = $(event.target).attr("data-id");
+        console.log("windows clicked : ", windowID);
+        recordedSequence.push([Date.now()-timeStarted, windowID, 0]);
+    });
+
     $(document).on('mousedown', '.window', function(event){
         const windowID = $(event.target).attr("data-id");
         console.log("windows clicked : ", windowID);
@@ -64,7 +78,7 @@ $( document ).ready(function() {
         recordedSequence.push([Date.now()-timeStarted, windowID, 0]);
     });
 
-    // add an off element at the end of the sequence to reserve space for the loop
+    // add a 0 element at the end of the sequence to reserve space at the end of the loop
     function endSequence() {
         const lastWindowUsed = recordedSequence[recordedSequence.length-1][2];
         recordedSequence.push([Date.now()-timeStarted, lastWindowUsed, 0]);
