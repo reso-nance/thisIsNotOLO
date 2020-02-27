@@ -13,22 +13,7 @@
   You should have received a copy of the GNU General Public License
   along with this program; if not, write to the Free Software
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-  MA 02110-1301, USA.
-
-
-          Wemos D1         INPUTpins
-            5V -------------- vcc
-            Gnd ------------- gnd
-            D0 --15k pullup-- IN0
-            D1 -------------- IN1
-            D2 -------------- IN2
-            D5 -------------- IN3
-            D6 -------------- IN4
-            D7 -------------- IN5
-            D4 -------------- IN6
-
-D0/GPIO16 does need an external pullup, even in INPUT_PULLUP mode. Otherwise the internal pullup is deactivated the first time the pin is pulled LOW
-D8/GPIO15 must stay LOW for the ESP8266 to boot, so no external pullup possible there. The internal one doesn't seems to work either.
+  MA 02110-1301, USA.  
 compiled with ESP8266 v2.4.1 and OSC 1.3.3
 */
 #include "Arduino.h"
@@ -45,9 +30,9 @@ compiled with ESP8266 v2.4.1 and OSC 1.3.3
 #define MIN_FADING_STEP_DURATION 5 // minimum time in ms after which the fading can be updated
 #define FADE_INTERRUPTS_ANOTHER false // if set to false, creating a new fade will be ignored if another fading is already in progress
 #define SERIAL_DEBUG
-#define NO_ROUTER
+// #define NO_ROUTER
 #define USE_BUILTIN_LED // if undef, will use RBDdimmer instead
-#define FIXED_HOSTNAME "light0"
+#define FIXED_HOSTNAME "light2"
 
 static const float exponent = 2.0f; // used to produce exponential fades
 #ifdef FIXED_HOSTNAME
@@ -60,8 +45,8 @@ String hostname="light_"+MACaddress;
 static char* SSID = "ZINC 2.4";
 static char* PSK = "zincZN30!";
 #else
-static char* PSK = "malinette666";
-static char* SSID = "malinette";
+static char* PSK = NULL;
+static char* SSID = "bergen.olo";
 #endif
 const int listenPort = 8000;
 int targetPort = 9000;
@@ -209,16 +194,16 @@ void sendFadeACK() {
 
 unsigned int expMap(unsigned int value, unsigned int start, unsigned int stop){
   float num=0;
-  float denum=0;
+  float denom=0;
   if (start < stop) {
     num = pow(value, exponent) - pow(start, exponent);
-    denum = pow(stop, exponent) - pow(start, exponent);
+    denom = pow(stop, exponent) - pow(start, exponent);
   }
   else {
     num = pow(value, exponent) - pow(stop, exponent);
-    denum = pow(start, exponent) - pow(stop, exponent);
+    denom = pow(start, exponent) - pow(stop, exponent);
   }
-  float result = num/denum;
+  float result = num/denom;
   //unsigned int result = 100* (pow(value, exponent) - pow(start, exponent))/(pow(stop, exponent)-pow(start, exponent));
   return 100*result;
 }

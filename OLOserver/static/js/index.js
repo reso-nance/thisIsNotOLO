@@ -16,10 +16,13 @@ $( document ).ready(function() {
         if (isRecording) {
             $("#rec").removeClass("btn-warning").addClass("btn-danger");
             isRecording = false;
-            endSequence();
-            console.log( "finished recording :", recordedSequence);
+            if (recordedSequence.length>2){
+                endSequence();
+                console.log( "finished recording :", recordedSequence);
+                $("#play").show();
+            }
+            else console.log("finished empty recording");
             $("#rec").text("startRec");
-            $("#play").show();
         }
         else {
             $("#rec").removeClass("btn-danger").addClass("btn-warning");
@@ -31,7 +34,6 @@ $( document ).ready(function() {
             $("#rec").text("stopRec");
             $("#play").hide();
         }   
-        // socket.emit("dispatchFileToClients", {"filename":filename, "clientList":clientList});
      });
 
      $(document).on("click", "#play", function(event) {
@@ -80,6 +82,7 @@ $( document ).ready(function() {
 
     // add a 0 element at the end of the sequence to reserve space at the end of the loop
     function endSequence() {
+        if (recordedSequence.length<2) return;
         const lastWindowUsed = recordedSequence[recordedSequence.length-1][2];
         recordedSequence.push([Date.now()-timeStarted, lastWindowUsed, 0]);
     }

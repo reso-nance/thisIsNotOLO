@@ -97,7 +97,8 @@ def playSequencesForLight(ID):
     lightValue = int(lightStates[ID]["sum"] / lightStates[ID]["seqCount"])
     if lightValue != lightStates[ID]["lastSent"] : 
         lightStates[ID]["lastSent"] = lightValue
-        OSC.sendValueToLight(lightValue, ID)
+        OSC.setLight(ID,lightValue)
+        # OSC.sendValueToLight(lightValue, ID)
         # FIXME : should send an OSC message here
     for sequence in activeSequences.values() : sequence.nextPassDampening = lightStates[ID]["seqCount"]*dampeningPerUser + dampeningPerLoop
     # print(lightStates)

@@ -24,10 +24,8 @@ from flask import Flask, g, render_template, redirect, request
 from flask_socketio import SocketIO, emit
 # ~ import os, logging, subprocess, eventlet
 import os, logging, subprocess, urllib.parse, json
-import sequences
+import sequences, OSC
 # ~ eventlet.monkey_patch() # needed to make eventlet work asynchronously with socketIO, 
-
-mainTitle = "OLO"
 
 if __name__ == '__main__':
     raise SystemExit("this file is made to be imported as a module, not executed")
@@ -41,12 +39,26 @@ socketio = SocketIO(app, async_mode="threading", ping_timeout=36000)# set the ti
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
+@app.before_request
+def handleHTTPS():
+    if request.url.startswith('https://'):
+        print("requested HTTPS")
+        return render_template('index.html')
+        # url = request.url.replace('https://', 'http://', 1)
+        # return redirect(url, code=301)
+
 # --------------- FLASK ROUTES ----------------
 
 @app.route('/')
 def rte_homePage():
-    general_Data = {'title':mainTitle}
-    return render_template('index.html', **general_Data)
+    return render_template('index.html')
+
+@app.errorhandler(404)
+def page_not_found(e):
+    """ redirect 404 to the main page since user may come from various addresses including /"""
+    if request.is_secure :
+        print("using HTTPS")
+    return render_template('index.html')
 
 # --------------- SOCKET IO EVENTS ----------------
 
@@ -67,11 +79,18 @@ def receivedNewSequence(sequenceID, jsSequence):
 def removeSequence(sequenceID):
     print("removing sequence", sequenceID)
     if sequenceID in sequences.activeSequences : 
+        # turning used lights off FIXME
+        # (OSC.setLight(light, 0) for light in sequences.activeSequences[sequenceID].usedLights)
+        # removing the sequence
         sequences.activeSequences.pop(sequenceID)
 
 @socketio.on('clearAllSequences', namespace='/home')
 def clearAllSequences():
     print("clearing all sequences")
+    # turning used lights off FIXME
+    # for seq in sequences.activeSequences.values():
+    #     (OSC.setLight(light, 0) for light in seq.usedLights)
+    # erasing all stored sequences
     sequences.activeSequences = {}
     
 # --------------- FUNCTIONS ----------------

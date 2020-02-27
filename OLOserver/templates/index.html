@@ -11,7 +11,7 @@
 -->
     <!-- Bootstrap CSS -->
     <script src="../static/js/jquery-3.3.1.min.js"></script>
-    <script>
+    <!-- <script>
       // jQuery extension disabling selection to avoid longpress issues on mobile
       $.fn.extend({ 
           disableSelection: function() { 
@@ -30,46 +30,42 @@
       $(document).ready(function() {
           $('*').disableSelection();            
       });
-  </script>
-    <script src="../static/js/popper.min.js"></script>
-    <script src="../static/js/socket.io.min.js"></script>
-    <script src="../static/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="../static/css/custom.css">
+  </script> -->
+  <script src="../static/js/bootstrap.min.js"></script>  
+  <script src="../static/js/popper.min.js"></script>
+  <script src="../static/js/socket.io.min.js"></script>
+  <link rel="stylesheet" href="../static/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../static/css/custom.css">
     
     <title>bergen.olo</title>
     
   </head>
   <body>
-    <div class="jumbotron">
-
-      <h1>Beta</h1>
-      <div class="row"></div>
-        <h2 class="unselectable window" data-id="0">fenêtre1</h2>
-        <div class="btn-group">
-          
-          <!-- <img src="/static/imgs/one.svg" height="200px" width="200px" class="window" data-id="1" /> -->
-          <button type="button" data-id="0" class="btn btn-lg btn-primary window">fenêtre 1</button>
-          <button type="button" data-id="1" class="btn btn-lg btn-primary window">fenêtre 2</button>
-          <button type="button" data-id="2" class="btn btn-lg btn-primary window">fenêtre 3</button>
-          <button type="button" data-id="3" class="btn btn-lg btn-primary window">fenêtre 4</button>
-        </div> 
-      </div>
+    <div class="container-fluid">
+      <h2 class="text-center mt-5">OLO</h2>
+      <p class="text-center">alpha</p>
       <div class="row">
-        <div class="btn-group">
-          <button type="button" data-id="4" class="btn btn-lg btn-primary window">fenêtre 5</button>
-          <button type="button" data-id="5" class="btn btn-primary window">fenêtre 6</button>
-          <button type="button" data-id="6" class="btn btn-primary window">fenêtre 7</button>
-          <button type="button" data-id="7" class="btn btn-primary window">fenêtre 8</button>
-        </div> 
-      </div>
-      <div class="btn-group">
+        <div class="col-3 window unselectable text-center align-middle" data-id="0">1 </div>
+        <div class="col-3 window unselectable text-center align-middle" data-id="1">2 </div>
+        <div class="col-3 window unselectable text-center align-middle" data-id="2">3 </div>
+        <div class="col-3 window unselectable text-center align-middle" data-id="3">4 </div>
+      </div> 
+      <div class="row">
+        <div class="col-3 window unselectable text-center align-middle" data-id="4">5 </div>
+        <div class="col-3 window unselectable text-center align-middle" data-id="5">6 </div>
+        <div class="col-3 window unselectable text-center align-middle" data-id="6">7 </div>
+        <div class="col-3 window unselectable text-center align-middle" data-id="7">8 </div>
+    </div>
+
+    <div class="container mt-3">
+      <div class="d-flex justify-content-around mb-3">
         <button type="button" id="rec" class="btn btn-lg btn-danger">startRec</button>
         <button type="button" id="play" class="btn btn-success">play</button>
         <button type="button" id="remove" class="btn btn-success">remove</button>
         <button type="button" id="clear" class="btn btn-success">clear</button>
       </div>
-
     </div>
+
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
     <script type= "text/javascript" src="../static/js/index.js"></script>

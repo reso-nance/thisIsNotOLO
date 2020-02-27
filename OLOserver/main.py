@@ -29,22 +29,28 @@ import OSC, UI, sequences
 flaskBind = "OLOserver.local"
 HTTPlisteningPort = 8080
 
-oscServerThread = None
-
 def exitCleanly(*args):
-    print()
-    print("exiting OSCserver thread")
-    OSC.listenToOSC = False
-    print("exiting playThread...")
+    print("shutting the server down :")
+    print("  exiting OSCserver thread")
+    OSC.runOSCserver = False
+    print("  exiting validation thread")
+    OSC.runValidation = False
+    print("  exiting playThread...")
     sequences.isPlaying = False
+    print("all good, see you around !")
     raise SystemExit
 
 if __name__ == '__main__':
     signal.signal(signal.SIGTERM, exitCleanly) # register this exitCleanly function to be called on sigterm
     atexit.register(exitCleanly) # idem when called from within this script
     # ~ eventlet.spawn(OSCserver.listen)
-    # oscServerThread = Thread(target=OSC.listen)
-    # oscServerThread.start()
+    print("starting the OSC server...")
+    Thread(target=OSC.listenToOSC).start()
+    print("starting the validation (ACK) thread...")
+    Thread(target=OSC.validateLights).start()
+    print("asking lights to identify themselves :")
+    OSC.askLightsForID(2)
+    # Thread(target=OSC.askLightsForID).start()
     # print("starting check disconnect thread...")
     # Thread(target=clients.checkDisconnected).start()
     print("starting up webserver on %s:%i..." %(flaskBind, HTTPlisteningPort))

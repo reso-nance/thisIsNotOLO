@@ -26,7 +26,7 @@ OSCsendPort = 8000
 OSClistenPort = 9000
 runOSCserver, runValidation = True, True
 validationTime = .2 # time in s after which a light value will be sent again if no ACK has been received
-lightAdresses = [str(i)+".local" for i in range(8)]
+lightAdresses = ["light"+str(i)+".local" for i in range(8)]
 
 class Light:
     def __init__(self, hostname, ip):
@@ -59,13 +59,13 @@ class Light:
         if not self.validated and time.time() - self.validationTime > validationTime :
             if self.ack == self.value : 
                 self.validated = True
-                print("validated :", self.value)
+                # print("validated :", self.value)
             else : 
                 if isinstance(self.value, int) : self.setLight(self.value)
                 elif isinstance(self.value, list) :
-                    print("trying to validate a fade :", self.value)
+                    # print("trying to validate a fade :", self.value)
                     self.startFade(*self.value)
-                print("sending again")
+                print("sending last value again for", self.hostname)
 
 
 def unknownOSC(address, args, tags, IPaddress):
@@ -89,37 +89,19 @@ def handleID(address, args, tags, IPaddress):
     global knownLights
     ip = IPaddress.url.split("//")[1].split(":")[0] # retrieve IP from an url like osc.udp://10.0.0.12:35147/
     hostname = str(args[0])
-    if hostname not in knownLights : print("added new device "+hostname)
+    if hostname not in knownLights : 
+        print("added new device "+hostname)
     else : print("updated device "+hostname)
     knownLights.update({hostname:Light(hostname, ip)})
+    print ("knownLights :", *knownLights)
+    
 
 def setLight(hostname, value):
+    if isinstance(hostname, int) : hostname = "light"+str(hostname)
     value = int(value)
     # print("setting %s to %i" %(hostname, value))
     if hostname in knownLights : knownLights[hostname].setLight(value)
     else : print("ERROR : cannot set light value on unknown device "+hostname)
-
-# deprecated since fades are generated on the ESP8266 directly
-# def fadeLight(hostname, fadeFrom, fadeTo, duration, exp=2, delay=0.05) :
-#     reverse = True if fadeFrom > fadeTo else False
-#     if reverse : fadeFrom, fadeTo = fadeTo, fadeFrom
-#     stepsCount = int(duration/delay)
-#     values = [i**exp for i in range(0,stepsCount)]
-#     mapToRange = lambda x, a, b, c, d : int((x-a)/(b-a)*(d-c)+c)
-#     values = [mapToRange(x,min(values), max(values), fadeFrom, fadeTo) for x in values]
-#     if reverse : values.reverse()
-#     for i in range(len(values)) :
-#         Timer(delay*i+1, setLight, args=[hostname, values[i]]).start()
-
-def lightShow(hostname, fadeTime, totalTime=False):
-    timeStarted = time.time()
-    while runOSCserver :
-        if totalTime and time.time() - timeStarted > totalTime : return
-        if hostname in knownLights :
-            knownLights[hostname].startFade(0, 100, fadeTime)
-            time.sleep(fadeTime/1000+.1)
-            knownLights[hostname].startFade(100, 0, fadeTime)
-            time.sleep(fadeTime/1000+.1)
 
 def broadcastOSC(OSCaddress, OSCport, OSCargs=None):
     """
@@ -130,17 +112,17 @@ def broadcastOSC(OSCaddress, OSCport, OSCargs=None):
         ip = "10.0.0."+str(i)
         if OSCargs : liblo.send((ip, OSCport), OSCaddress, *OSCargs)
         else : liblo.send((ip, OSCport), OSCaddress)
-        i = int(i/10)
-        sys.stdout.write("\r{0}>".format("="*i))
-        sys.stdout.flush()
         time.sleep(.01)
-    print("done")
 
-def sendValueToLight(value, lightID):
-    value = min(100, max(value, 0))
-    # FIXME debug
-    liblo.send(("10.0.120.85", OSCsendPort), "/light%i/light"%lightID, value)
-    print("sent /light%i/light"%lightID, value)
+# def sendValueToLight(value, lightID):
+#     """ send an OSC message to the light containing it's value. The lightID is an int 0-8"""
+#     value = min(100, max(value, 0))
+#     try :
+#         thisLight = next(light.IP for light in knownLights if light.hostname == "light%i"%lightID)
+#         liblo.send((thisLight.IP, OSCsendPort), "/%s/light" % thisLight.hostname, value)
+#         print("sent /%s/light"%thisLight.hostname, value)
+#     except StopIteration :
+#         print("tried to set light%i to %i but this light is'nt connected yet" %(lightID,value))
 
 def validateLights():
     while runValidation :
@@ -149,6 +131,8 @@ def validateLights():
     print("  closing the validation thread")
 
 def listenToOSC():
+    """ this function handles OSC reception. It is blocking and meant to be run as a thread. 
+    The thread will exit gracefully when the runOSCserver bool is set to False"""
     try:
         server = liblo.Server(OSClistenPort)
         print("listening to incoming OSC on port %i" % OSClistenPort)
@@ -165,32 +149,7 @@ def listenToOSC():
         server.recv(50)
     print("  OSC server has closed")
 
-if __name__ == '__main__':
-
-    print("starting the OSC server thread...")
-    oscServerThread = Thread(target=listenToOSC)
-    oscServerThread.start()
-
-    print("starting the validation thread...")
-    validationThread = Thread(target=validateLights)
-    validationThread.start()
-
-    print("broadcasting /whoIsThere...")
-    broadcastOSC("/whoIsThere", OSCsendPort)
-    time.sleep(1) # gives ESPs time to respond
-
-    if "light_3C71BF264A9B" in knownLights :
-        print("starting test lightshow on light_3C71BF264A9B")
-        Thread(target=lightShow, args=("light_3C71BF264A9B", 2000)).start()
-
-    try : 
-        lightShowStarted = False
-        while True : 
-            time.sleep(.1)
-            if "light_3C71BF264A9B" in knownLights and not lightShowStarted:
-                print("starting test lightshow on light_3C71BF264A9B")
-                Thread(target=lightShow, args=("light_3C71BF264A9B", 2000)).start()
-                lightShowStarted = True
-    except KeyboardInterrupt :
-        runOSCserver = False
-        runValidation = False
+def askLightsForID(iterations):
+    for i in range(iterations):
+        broadcastOSC("/whoIsThere", OSCsendPort)
+        time.sleep(1) # gives ESPs time to respond
