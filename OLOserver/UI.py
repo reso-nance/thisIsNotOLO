@@ -87,10 +87,8 @@ def removeSequence(sequenceID):
 @socketio.on('clearAllSequences', namespace='/home')
 def clearAllSequences():
     print("clearing all sequences")
-    # turning used lights off FIXME
-    # for seq in sequences.activeSequences.values():
-    #     (OSC.setLight(light, 0) for light in seq.usedLights)
     # erasing all stored sequences
     sequences.activeSequences = {}
+    sequences.blackout()
     
 # --------------- FUNCTIONS ----------------

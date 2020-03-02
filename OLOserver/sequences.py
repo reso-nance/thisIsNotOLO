@@ -39,6 +39,16 @@ lightTimestamps = [datetime.now()]*8
 isPlaying = True # set this to False to exit the play thread
 
 class Sequence:
+    """
+    a sequence contains :
+    - ID a unique ID (random int)
+    - events : a numpy array containing tuples of 3 : (time_ms, lampID, value)
+    - usedLights : a list of int containing the IDs of every lamp used in the sequence
+    - dampen : an int that will be substracted from the lamps values
+    - nextPassDampening : the increment of dampen per loop
+    - eventIndex : index of the last event played (int)
+    """
+
     def __init__(self, ID, jsSequence):
         dtypes = [("time", "uint32"), ("ID", "uint8"), ("value", "uint8")]
         self.ID = ID
@@ -54,31 +64,57 @@ class Sequence:
         self.isPlaying = False
         self.timeStarted = datetime.now()
         self.eventIndex = 0
+        # print("new sequence ", self.ID)
+        # print("events :\n", self.events)
+        # print("used lights :", self.usedLights)
 
     def playByLight(self, ID, startTime, stopTime):
+        """
+        returns the value of one lamp at a given time period (of the last event occured within this period)
+        - ID : (int) lamp identifier
+        - startTime (datetime object) : start of the period of interest
+        - stopTime (datetime object) : enc of the period of interest
+        """
         assert ID in self.usedLights
         # for event in [e for e in self.events if e["ID"] == ID] :
         event = self.events[self.eventIndex]
+        if event["ID"] != ID : return # last event doesn't concern this lights
         eventTime = self.timeStarted + timedelta(milliseconds=int(event["time"])) 
-        if eventTime > startTime and eventTime < stopTime :
+        if eventTime > startTime and eventTime < stopTime : # the last event is in the period of interest
             if self.eventIndex < len(self.events)-1 :
                 self.eventIndex += 1
             else : # we have reached the end of the sequence, time to start over again
                 self.eventIndex = 0
                 self.timeStarted = datetime.now()
-                self.dampen += self.nextPassDampening
+                self.dampen += self.nextPassDampening # update the dampening
             if event["value"] == 100 : return event["value"] - self.dampen
             else : return 0
         else : # no event played during this time, we must return the value of the previous event
             if self.eventIndex > 0 : return self.events[self.eventIndex-1]["value"] - self.dampen
             else : return self.events[-1] ["value"] - self.dampen -self.nextPassDampening # which will be the first one if we are at the last event
 
+    def remove(self):
+        """ removes the sequence from activeSequences and turn off every light used"""
+        global activeSequences
+        for light in self.usedLights :
+            OSC.setLight(light, 0) # set every used light to OFF
+        activeSequences.pop(self.ID)
+
 def addNew(ID, jsSequence):
+    """
+    append a sequence containing the events described as a list of tuple (time_ms, lampID, value)
+    to the activeSequences dictionnary {seqID:seqObject} \n
+     - ID is the unique identifier of this sequence (int), randomly generated on the UI
+     - jsSequence is the list of tuple sent by the UI
+     """
     global activeSequences
-    # activeSequences.append(Sequence(jsSequence))
     activeSequences.update({ID:Sequence(ID, jsSequence)})
 
 def playSequencesForLight(ID):
+    """
+    calculate the mean value for this lamp by averaging every sequence using it in this time interval.
+    - ID is an int 0-7
+    """
     # print("evaluating sequences for light :", ID)
     global lightTimestamps, lightStates
     startTime = lightTimestamps[ID] # last time we checked this lamp
@@ -90,17 +126,17 @@ def playSequencesForLight(ID):
         # if sequence.dampen >= 100 : activeSequences.remove(sequence)
         if sequence.dampen >= 100 : activeSequences.pop(sequence.ID)
         value = sequence.playByLight(ID, startTime, stopTime)
-        value = sequence.playByLight(ID, startTime, stopTime)
-        lightStates[ID]["seqCount"] += 1
-        if value > 0 : lightStates[ID]["sum"] += value
+        if value is not None:
+            lightStates[ID]["seqCount"] += 1
+            if value > 0 : lightStates[ID]["sum"] += value
     if lightStates[ID]["seqCount"] < 1 : return
     lightValue = int(lightStates[ID]["sum"] / lightStates[ID]["seqCount"])
     if lightValue != lightStates[ID]["lastSent"] : 
         lightStates[ID]["lastSent"] = lightValue
         OSC.setLight(ID,lightValue)
-        # OSC.sendValueToLight(lightValue, ID)
-        # FIXME : should send an OSC message here
-    for sequence in activeSequences.values() : sequence.nextPassDampening = lightStates[ID]["seqCount"]*dampeningPerUser + dampeningPerLoop
+        # print("setting light %i to %i "%(ID, lightValue), "lightStates[%i] :"%ID, lightStates[ID])
+    for sequence in activeSequences.values() :
+        sequence.nextPassDampening = lightStates[ID]["seqCount"] * dampeningPerUser + dampeningPerLoop
     # print(lightStates)
         
 def playThread():
@@ -116,5 +152,14 @@ def playThread():
         currentLight = currentLight+1 if currentLight<7 else 0
 
 def play() :
+    """plays every sequence in activeSequence lamp by lamp while isPlaying is True"""
     Thread(target=playThread).start()
 
+def blackoutThread():
+    print("  blacking out...")
+    for i in range(8):
+        OSC.setLight(i,0)
+        time.sleep(.1)
+
+def blackout() :
+    Thread(target=blackoutThread).start()

@@ -69,11 +69,15 @@ class Light:
 
 
 def unknownOSC(address, args, tags, IPaddress):
+    """callback on reception of a malformed/unknown OSC message"""
     print("got unknown message '%s' from '%s'" % (address, IPaddress.url))
     for a, t in zip(args, tags):
         print ("  argument of type '%s': %s" % (t, a))
 
 def handleAck(address, args, tags, IPaddress):
+    """
+    callback when an "/ACK" or "/fadeACK" OSC msg is received. Arguments contain the value acknowledged
+    """
     global knownLights
     if address == "/ACK" : hostname, value = args
     if address == "/fadeACK" :
@@ -86,6 +90,10 @@ def handleAck(address, args, tags, IPaddress):
         handleID(address, args, tags, IPaddress)
 
 def handleID(address, args, tags, IPaddress):
+    """
+    callback when an "/myID" OSC msg is recieved. The arguments received should be the hostname of this light.
+    The IP is directly read from the packet itself
+    """
     global knownLights
     ip = IPaddress.url.split("//")[1].split(":")[0] # retrieve IP from an url like osc.udp://10.0.0.12:35147/
     hostname = str(args[0])
@@ -97,6 +105,11 @@ def handleID(address, args, tags, IPaddress):
     
 
 def setLight(hostname, value):
+    """
+    send the "/hostname/light value" OSC message to the address corresponding to the light ID
+    - hostname : can be an int 0-7 or a string with the complete hostname ("light0")
+    - value : int 0 (off) - 100 (full power)
+    """
     if isinstance(hostname, int) : hostname = "light"+str(hostname)
     value = int(value)
     # print("setting %s to %i" %(hostname, value))
@@ -135,7 +148,7 @@ def listenToOSC():
     The thread will exit gracefully when the runOSCserver bool is set to False"""
     try:
         server = liblo.Server(OSClistenPort)
-        print("listening to incoming OSC on port %i" % OSClistenPort)
+        print("  listening to incoming OSC on port %i" % OSClistenPort)
     except liblo.ServerError as e:
         print(e)
         raise SystemError
@@ -150,6 +163,10 @@ def listenToOSC():
     print("  OSC server has closed")
 
 def askLightsForID(iterations):
+    """
+    broadcast the OSC message "/whoIsThere" asking lights to identify themselves, responding with their IP and hostname
+    For added safety, this message is broadcasted multiple times according to the iterations parameter
+    """
     for i in range(iterations):
         broadcastOSC("/whoIsThere", OSCsendPort)
         time.sleep(1) # gives ESPs time to respond

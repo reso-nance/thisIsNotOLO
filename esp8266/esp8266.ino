@@ -32,7 +32,7 @@ compiled with ESP8266 v2.4.1 and OSC 1.3.3
 #define SERIAL_DEBUG
 // #define NO_ROUTER
 #define USE_BUILTIN_LED // if undef, will use RBDdimmer instead
-#define FIXED_HOSTNAME "light2"
+#define FIXED_HOSTNAME "light0"
 
 static const float exponent = 2.0f; // used to produce exponential fades
 #ifdef FIXED_HOSTNAME

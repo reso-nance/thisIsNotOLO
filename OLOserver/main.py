@@ -30,6 +30,7 @@ flaskBind = "OLOserver.local"
 HTTPlisteningPort = 8080
 
 def exitCleanly(*args):
+    """gracefully quit every thread before SystemExit"""
     print("shutting the server down :")
     print("  exiting OSCserver thread")
     OSC.runOSCserver = False
@@ -37,6 +38,8 @@ def exitCleanly(*args):
     OSC.runValidation = False
     print("  exiting playThread...")
     sequences.isPlaying = False
+    print("  turning the lights off...")
+    sequences.blackout()
     print("all good, see you around !")
     raise SystemExit
 
@@ -49,7 +52,10 @@ if __name__ == '__main__':
     print("starting the validation (ACK) thread...")
     Thread(target=OSC.validateLights).start()
     print("asking lights to identify themselves :")
-    OSC.askLightsForID(2)
+    OSC.askLightsForID(1) # FIXME : DEBUG
+    # OSC.askLightsForID(2)
+    print("turning the lights off...")
+    sequences.blackout()
     # Thread(target=OSC.askLightsForID).start()
     # print("starting check disconnect thread...")
     # Thread(target=clients.checkDisconnected).start()
