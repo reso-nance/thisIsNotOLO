@@ -10,7 +10,24 @@ $( document ).ready(function() {
     var timeStarted = 0;
     var recordedSequence = [];
     $("#play").hide();
-    var sequenceID = 0; 
+    var sequenceID = 0;
+    const notes=["C3", "E3", "G3", "G4", "E4", "G4", "C5", "E5"];
+
+    var synth = new Tone.PolySynth(3, Tone.Synth, {
+        "oscillator" : {
+            "type" : "fatsine",
+            "count" : 3,
+            "spread" : 30
+        },
+        "envelope" : {
+            "attack" : 0.1,
+            "decay" : 0.1,
+            "sustain" : 0.5,
+            "release" : 0.4,
+            "attackCurve" : "exponential"
+        },
+    }).toMaster();
+    var reverb = new Tone.Reverb().toMaster();
 
     $(document).on('click', '#rec', function(event){
         if (isRecording) {
@@ -79,13 +96,15 @@ $( document ).ready(function() {
     function lightEvent(lampID, value){
         recordedSequence.push([Date.now()-timeStarted, lampID, value]);
         const action = (value == 0) ? "released" : "clicked"
-        // const audioElement = $("#audio"+lampID);
-        const audioElement = document.getElementById("audio"+lampID); 
-        if (value == 0) audioElement.pause();
-        else {
-            audioElement.play();
-            audioElement.currentTime = 0;
-        }
+        const note = notes[parseInt(lampID)];
+        if ( value == 0) synth.triggerRelease(note, undefined);
+        else synth.triggerAttack(note, undefined); // note or array, time, velocity 0~1
+        // const audioElement = document.getElementById("audio"+lampID); 
+        // if (value == 0) audioElement.pause();
+        // else {
+        //     audioElement.play();
+        //     audioElement.currentTime = 0;
+        // }
         console.log("window", lampID, action);
     }
     // add a 0 element at the end of the sequence to reserve space at the end of the loop
