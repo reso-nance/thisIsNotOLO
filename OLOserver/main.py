@@ -51,11 +51,13 @@ if __name__ == '__main__':
     Thread(target=OSC.listenToOSC).start()
     print("starting the validation (ACK) thread...")
     Thread(target=OSC.validateLights).start()
-    print("asking lights to identify themselves :")
-    OSC.askLightsForID(1) # FIXME : DEBUG
+    print("asking lights to identify themselves ...")
+    OSC.askLightsForID(1) # FIXME : DEBUG, should be at least 3
     # OSC.askLightsForID(2)
     print("turning the lights off...")
     sequences.blackout()
+    print("generating UI notes ...")
+    UI.generateNotes()
     # Thread(target=OSC.askLightsForID).start()
     # print("starting check disconnect thread...")
     # Thread(target=clients.checkDisconnected).start()

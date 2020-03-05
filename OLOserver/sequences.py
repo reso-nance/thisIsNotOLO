@@ -22,11 +22,8 @@
 from datetime import datetime, timedelta
 from threading import Thread
 import numpy, time
-import OSC
+import OSC, config
 
-dampeningPerLoop = 10
-dampeningPerUser = 5
-mainLoopDelay = 8 # time in milliseconds at which the sequences are evaluated and played for each light
 activeSequences = {} # will contain the sequences currently playing
 # activeSequences = [] # will contain the sequences currently playing
 # this variable will contain for each lamp :
@@ -34,7 +31,7 @@ activeSequences = {} # will contain the sequences currently playing
 #   the number of sequences using this lamp (to calculate mean)
 #   the last value sent to avoid unnecessary OSC packets
 lightStates = numpy.array([0]*8, dtype=[("sum", "uint16"), ("seqCount", "uint8"), ("lastSent", "uint8")])
-lightTimestamps = [datetime.now()]*8
+lightTimestamps = [datetime.now()]*config.lightCount
 
 isPlaying = True # set this to False to exit the play thread
 
@@ -60,7 +57,7 @@ class Sequence:
             self.events[i]["value"] = jsSequence[i][2] # could be 0 or 100 (bools are stored as uint8 in numpy)
         self.usedLights = numpy.unique(self.events["ID"])
         self.dampen = 0
-        self.nextPassDampening = dampeningPerLoop
+        self.nextPassDampening = config.dampeningPerLoop
         self.isPlaying = False
         self.timeStarted = datetime.now()
         self.eventIndex = 0
@@ -136,7 +133,7 @@ def playSequencesForLight(ID):
         OSC.setLight(ID,lightValue)
         # print("setting light %i to %i "%(ID, lightValue), "lightStates[%i] :"%ID, lightStates[ID])
     for sequence in activeSequences.values() :
-        sequence.nextPassDampening = lightStates[ID]["seqCount"] * dampeningPerUser + dampeningPerLoop
+        sequence.nextPassDampening = lightStates[ID]["seqCount"] * config.dampeningPerUser + config.dampeningPerLoop
     # print(lightStates)
         
 def playThread():
@@ -147,7 +144,7 @@ def playThread():
     print("starting to play sequences...")
     while isPlaying :
         while datetime.now() < nextLightTimer : time.sleep(0.0005)
-        nextLightTimer += timedelta(milliseconds=mainLoopDelay/8)
+        nextLightTimer += timedelta(milliseconds=config.mainLoopDelay/config.lightCount)
         if activeSequences : playSequencesForLight(currentLight)
         currentLight = currentLight+1 if currentLight<7 else 0
 
@@ -157,7 +154,7 @@ def play() :
 
 def blackoutThread():
     print("  blacking out...")
-    for i in range(8):
+    for i in range(config.lightCount):
         OSC.setLight(i,0)
         time.sleep(.1)
 

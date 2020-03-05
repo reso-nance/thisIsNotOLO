@@ -11,7 +11,10 @@ $( document ).ready(function() {
     var recordedSequence = [];
     $("#play").hide();
     var sequenceID = 0;
-    const notes=["C3", "E3", "G3", "G4", "E4", "G4", "C5", "E5"];
+    console.log("notes", $("#notes").text())
+    const notes =  ($("#notes").text()).split(",");// will be generated on the backend depending on the lightCount
+    // for example : ["C3", "E3", "G3", "G4", "E4", "G4", "C5", "E5"];
+    // $("#midiNotes").hide();
 
     var synth = new Tone.PolySynth(3, Tone.Synth, {
         "oscillator" : {
@@ -114,24 +117,10 @@ $( document ).ready(function() {
         recordedSequence.push([Date.now()-timeStarted, lastWindowUsed, 0]);
     }
 
-    // https://stackoverflow.com/questions/7942452/javascript-slowly-decrease-volume-of-audio-element/7942472#7942472
-    // function fadeVolume(volume, callback)
-    //     var factor  = 0.01,
-    //         speed   = 50;
-    //     if (volume > factor){
-    //         setTimeout(function(){
-    //             fadeVolume((audio.volume -= factor), callback);         
-    //         }, speed);
+    // function displayWindows(windowsCount) {
+    //     for (let i; i < windowsCount; i++) {
+            
     //     }
-    //     else (typeof(callback) !== 'function') || callback();
-    //     fadeVolume(audio.volume, function(){
-    //     console.log('fade complete');
-    // });
-
-    // // update connected devices on server request
-    // socket.on('deviceList', function(data) {
-    //     connectedDevices = Object.values(data);
-    //     updateDeviceList();
-    // });
+    // }
     
 });

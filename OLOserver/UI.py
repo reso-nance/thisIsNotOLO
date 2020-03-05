@@ -24,7 +24,7 @@ from flask import Flask, g, render_template, redirect, request
 from flask_socketio import SocketIO, emit
 # ~ import os, logging, subprocess, eventlet
 import os, logging, subprocess, urllib.parse, json
-import sequences, OSC
+import sequences, OSC, config
 # ~ eventlet.monkey_patch() # needed to make eventlet work asynchronously with socketIO, 
 
 if __name__ == '__main__':
@@ -38,7 +38,9 @@ socketio = SocketIO(app, async_mode="threading", ping_timeout=36000)# set the ti
 # disable flask debug (except errors)
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
+notes = [] # will contain a sequence of notes to be played on the UI (eg ["C4", "E4"...])
 
+# FIXME : not working at all
 @app.before_request
 def handleHTTPS():
     if request.url.startswith('https://'):
@@ -51,20 +53,20 @@ def handleHTTPS():
 
 @app.route('/')
 def rte_homePage():
-    return render_template('index.html')
+    return render_template('index.html', notes=notes)
 
 @app.errorhandler(404)
 def page_not_found(e):
     """ redirect 404 to the main page since user may come from various addresses including /"""
     if request.is_secure :
         print("using HTTPS")
-    return render_template('index.html')
+    return render_template('index.html', notes=notes)
 
 # --------------- SOCKET IO EVENTS ----------------
 
 @socketio.on('connect', namespace='/home')
 def onConnect():
-    print("client connected, session id : "+request.sid)
+    print("client connected, session id :", request.sid)
 
 @socketio.on('disconnect', namespace='/home')
 def onDisconnect():
@@ -92,3 +94,19 @@ def clearAllSequences():
     sequences.blackout()
     
 # --------------- FUNCTIONS ----------------
+def generateNotes() :
+    """returns a string containing a JS-formatted array with as many notes as needed \
+    (one note per light), depending on config.lightCount. \
+    for instance : "C3, E3, G3, G4, E4, G4, C5, E5] 
+    - notes must be a list containing note names in uppercase (eg ["C", "E", "G"])
+    - startOctave must be an int"""
+    global notes
+    notesGenerated, currentOctave, sourceNoteIndex = 0, config.startOctave, 0
+    while notesGenerated < config.lightCount :
+        notes.append(config.notes[sourceNoteIndex]+str(currentOctave))
+        if sourceNoteIndex < len(config.notes)-1 : sourceNoteIndex += 1
+        else :
+            currentOctave += 1
+            sourceNoteIndex = 0
+        notesGenerated += 1
+    notes = ",".join(notes) # transform the list into a comma separated string for JS parsing later on

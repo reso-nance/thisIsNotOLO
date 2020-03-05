@@ -20,13 +20,14 @@
 #  
 import liblo, time, sys
 from threading import Thread, Timer
+import config
 
 knownLights = {}
 OSCsendPort = 8000
 OSClistenPort = 9000
 runOSCserver, runValidation = True, True
 validationTime = .2 # time in s after which a light value will be sent again if no ACK has been received
-lightAdresses = ["light"+str(i)+".local" for i in range(8)]
+lightAdresses = ["light"+str(i)+".local" for i in range(config.lightCount)]
 
 class Light:
     def __init__(self, hostname, ip):
