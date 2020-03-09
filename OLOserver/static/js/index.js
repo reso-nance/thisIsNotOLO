@@ -13,6 +13,7 @@ $( document ).ready(function() {
     var sequenceID = 0;
     console.log("notes", $("#notes").text())
     const notes =  ($("#notes").text()).split(",");// will be generated on the backend depending on the lightCount
+    const maxSequenceLength = 10000; //  in millis, recording will stop when reached
     // for example : ["C3", "E3", "G3", "G4", "E4", "G4", "C5", "E5"];
     // $("#midiNotes").hide();
 
@@ -43,6 +44,7 @@ $( document ).ready(function() {
             }
             else console.log("finished empty recording");
             $("#rec").text("startRec");
+            clearInterval(); // stop checkMaxSequenceLength
         }
         else {
             $("#rec").removeClass("btn-danger").addClass("btn-warning");
@@ -53,6 +55,7 @@ $( document ).ready(function() {
             console.log( "recording...");
             $("#rec").text("stopRec");
             $("#play").hide();
+            window.setInterval(function(){checkMaxSequenceLength()}, 1000); // check every sec that we are not exceeding max sequence duration
         }   
      });
 
@@ -115,6 +118,14 @@ $( document ).ready(function() {
         if (recordedSequence.length<2) return;
         const lastWindowUsed = recordedSequence[recordedSequence.length-1][2];
         recordedSequence.push([Date.now()-timeStarted, lastWindowUsed, 0]);
+    }
+
+    // check that the sequence doesn't exceed maxSequenceLength
+    function checkMaxSequenceLength() {
+        if (isRecording && Date.now()-timeStarted > maxSequenceLength) {
+            $("#rec").trigger("click");
+            console.log("reached max sequence duration of", maxSequenceLength, "ms : current duration :", Date.now()-timeStarted);
+        }
     }
 
     // function displayWindows(windowsCount) {

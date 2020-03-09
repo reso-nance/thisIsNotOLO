@@ -29,6 +29,8 @@ compiled with ESP8266 v2.4.1 and OSC 1.3.3
 #define DIMMER_ZC D2
 #define MIN_FADING_STEP_DURATION 5 // minimum time in ms after which the fading can be updated
 #define FADE_INTERRUPTS_ANOTHER false // if set to false, creating a new fade will be ignored if another fading is already in progress
+#define OFF_MODE_THREESHOLD 10 // below this 0~1023 value, the potentiometer will set the mode to OFF
+#define OSC_MODE_THREESHOLD 1000 // below this 0~1023 value, the potentiometer will set the mode to OSC
 #define SERIAL_DEBUG
 // #define NO_ROUTER
 #define USE_BUILTIN_LED // if undef, will use RBDdimmer instead
@@ -62,6 +64,7 @@ char incomingAddress[128]; // OSC address buffer
 String OSCprefix; // will store /[hostname][MACaddress without semicolons
 bool OTA_asked = false; // flag which become true for OTA_TIMEOUT seconds after receiving a /beginOTA message to suspend device activity while flashing
 int lastValueUsed = 0;
+bool oscMode = false; // false = manual mode or OFF
 #ifndef USE_BUILTIN_LED
 dimmerLampESP8266 dimmer(DIMMER_PWM, DIMMER_ZC);
 #endif
@@ -115,6 +118,20 @@ void setup() {
 }
 
 void loop() {
+
+  uint potValue = analogRead(A0);
+  if (potValue < OFF_MODE_THREESHOLD) { // OFF mode
+    oscMode = false;
+    setLight(0);
+    delay(20);
+  }
+  else if (potValue >OSC_MODE_THREESHOLD) oscMode = true; // OSC mode
+  else { // manual mode
+    oscMode = false;
+    setLight(map(potValue, OFF_MODE_THREESHOLD, OSC_MODE_THREESHOLD, 0, 100));
+    delay(20);
+  }
+
   char hostnameAsChar[hostname.length()+1];
   hostname.toCharArray(hostnameAsChar, hostname.length()+1);
   if (OTA_asked) { // when receiving a /beginOTA message, this loop will wait for OTA to begin instead of carrying on the main loop
@@ -127,7 +144,7 @@ void loop() {
     OTA_asked = false;
   }
   else {
-     delay(2);// needed to be able to receive OSC messages
+    delay(2);// needed to be able to receive OSC messages
   
   // Read OSC messages sent to this adress (or broadcasted)
     OSCMessage* msg = getOscMessage();
@@ -147,13 +164,14 @@ void loop() {
       } else if (msg->fullMatch(OSCLightAddress)&& msg->isInt(0)) { 
         int value = msg->getInt(0);
         value = constrain(value, 0, 100);
-        setLight(value);
-        sendACK();
+        if (oscMode) setLight(value);
+        sendACK(value);
         } else if (msg->fullMatch(OSCfadeAddress) && msg->isInt(0) && msg->isInt(1) && msg->isInt(2)) { 
         const int start = constrain(msg->getInt(0),0,100);
         const int stop = constrain(msg->getInt(1),0,100);
         const int duration = msg->getInt(2);
-        startFade(start, stop, duration);
+        if(oscMode) startFade(start, stop, duration);
+        sendFadeACK();
       } else if ( msg->fullMatch(OSCOTA) ) {
         debugPrintln("Asked to prepare for OTA flashing");
         OTA_asked = true;
@@ -162,18 +180,18 @@ void loop() {
     }
     ESP.wdtFeed(); // avoid triggering the ESP watchdog
     yield(); // same but different
-    handleFade();
+    handleFade(); // process fades in progress
   }
 }
 
 //---------------- Hardware-specific functions ------------------  
 
-void sendACK() {
+void sendACK(int value) {
   char hostnameAsChar[hostname.length()+1];
   hostname.toCharArray(hostnameAsChar, hostname.length()+1);
   OSCMessage* msg = new OSCMessage("/ACK");
   msg->add(hostnameAsChar); // Hostname
-  msg->add((int) lastValueUsed); //value
+  msg->add((int) value); //value
   sendOscToServer(msg);
   debugPrintln("sent ACK");
   delete(msg);
