@@ -13,9 +13,11 @@ $( document ).ready(function() {
     var sequenceID = 0;
     console.log("notes", $("#notes").text())
     const notes =  ($("#notes").text()).split(",");// will be generated on the backend depending on the lightCount
-    const maxSequenceLength = 10000; //  in millis, recording will stop when reached
+    const activeWindows = ($("#activeWindows").text()).split(","); // get active window from the backend
+    const maxSequenceLength = 30000; //  in millis, recording will stop when this time has been reached
     // for example : ["C3", "E3", "G3", "G4", "E4", "G4", "C5", "E5"];
-    // $("#midiNotes").hide();
+    console.log("active windows :", activeWindows);
+    displayWindows();
 
     var synth = new Tone.PolySynth(3, Tone.Synth, {
         "oscillator" : {
@@ -77,32 +79,32 @@ $( document ).ready(function() {
             socket.emit("clearAllSequences");
      });
 
-    $(document).on('touchstart', '.window', function(event){
+    $(document).on('touchstart', '.window-active', function(event){
         event.preventDefault(); // prevent the opening of a context menu on long press
         $(event.target).css("background-color", "lightgray");
         lightEvent($(event.target).attr("data-id"), 100);
     });
 
-    $(document).on('touchend', '.window', function(event){
+    $(document).on('touchend', '.window-active', function(event){
         event.preventDefault(); // prevent the opening of a context menu on long press
         $(event.target).css("background-color", "darkslategray");
         lightEvent($(event.target).attr("data-id"), 0);
     });
 
-    $(document).on('mousedown', '.window', function(event){
+    $(document).on('mousedown', '.window-active', function(event){
         $(event.target).css("background-color", "lightgray");
         lightEvent($(event.target).attr("data-id"), 100);
     });
 
-    $(document).on('mouseup', '.window', function(event){
+    $(document).on('mouseup', '.window-active', function(event){
         $(event.target).css("background-color", "darkslategray")
         lightEvent($(event.target).attr("data-id"), 0);
     });
 
     function lightEvent(lampID, value){
         recordedSequence.push([Date.now()-timeStarted, lampID, value]);
-        const action = (value == 0) ? "released" : "clicked"
-        const note = notes[parseInt(lampID)];
+        const noteIndex = activeWindows.indexOf(lampID);
+        const note = notes[noteIndex];
         if ( value == 0) synth.triggerRelease(note, undefined);
         else synth.triggerAttack(note, undefined); // note or array, time, velocity 0~1
         // const audioElement = document.getElementById("audio"+lampID); 
@@ -111,7 +113,7 @@ $( document ).ready(function() {
         //     audioElement.play();
         //     audioElement.currentTime = 0;
         // }
-        console.log("window", lampID, action);
+        console.log("window", lampID, (value == 0) ? "released" : "clicked");
     }
     // add a 0 element at the end of the sequence to reserve space at the end of the loop
     function endSequence() {
@@ -128,10 +130,14 @@ $( document ).ready(function() {
         }
     }
 
-    // function displayWindows(windowsCount) {
-    //     for (let i; i < windowsCount; i++) {
-            
-    //     }
-    // }
+    // add the class window-active or window-inactive depending on the windows ID being in the activeWindows array
+    function displayWindows() {
+        for (let i=0; i < 12; i++) {
+            i = String(i);
+            let window = $(".window[data-id='"+i+"']");
+            if (activeWindows.includes(i)) window.addClass("window-active");
+            else window.addClass("window-inactive");
+        }
+    }
     
 });

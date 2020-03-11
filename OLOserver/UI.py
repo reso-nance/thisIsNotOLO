@@ -39,6 +39,8 @@ socketio = SocketIO(app, async_mode="threading", ping_timeout=36000)# set the ti
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 notes = [] # will contain a sequence of notes to be played on the UI (eg ["C4", "E4"...])
+activeWindows = ",".join([str(w) for w in config.activeWindows])
+print ("active windows", activeWindows)
 
 # FIXME : not working at all
 @app.before_request
@@ -53,14 +55,14 @@ def handleHTTPS():
 
 @app.route('/')
 def rte_homePage():
-    return render_template('index.html', notes=notes)
+    return render_template('index.html', notes=notes, activeWindows=activeWindows)
 
 @app.errorhandler(404)
 def page_not_found(e):
     """ redirect 404 to the main page since user may come from various addresses including /"""
     if request.is_secure :
         print("using HTTPS")
-    return render_template('index.html', notes=notes)
+    return render_template('index.html', notes=notes, activeWindows=activeWindows)
 
 # --------------- SOCKET IO EVENTS ----------------
 
@@ -102,7 +104,7 @@ def generateNotes() :
     - startOctave must be an int"""
     global notes
     notesGenerated, currentOctave, sourceNoteIndex = 0, config.startOctave, 0
-    while notesGenerated < config.lightCount :
+    while notesGenerated < len(config.activeWindows) :
         notes.append(config.notes[sourceNoteIndex]+str(currentOctave))
         if sourceNoteIndex < len(config.notes)-1 : sourceNoteIndex += 1
         else :

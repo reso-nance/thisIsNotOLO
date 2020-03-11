@@ -24,7 +24,7 @@ compiled with ESP8266 v2.4.1 and OSC 1.3.3
 #include <OSCMessage.h>
 #include "RBDdimmerESP8266.h"
 
-#define OTA_TIMEOUT 5 // time in seconds after which the device resume it's normal activity if no OTA firmware is comming 
+#define OTA_TIMEOUT 10 // time in seconds after which the device resume it's normal activity if no OTA firmware is comming 
 #define DIMMER_PWM D1
 #define DIMMER_ZC D2
 #define MIN_FADING_STEP_DURATION 5 // minimum time in ms after which the fading can be updated
@@ -125,7 +125,12 @@ void loop() {
     setLight(0);
     delay(20);
   }
-  else if (potValue >OSC_MODE_THREESHOLD) oscMode = true; // OSC mode
+  else if (potValue > OSC_MODE_THREESHOLD) {
+    if (!oscMode){ // first time we switch to OSC mode
+      oscMode = true;
+      setLight(0); // we turn the light off, waiting for OSC messages to arrive
+    }
+  }
   else { // manual mode
     oscMode = false;
     setLight(map(potValue, OFF_MODE_THREESHOLD, OSC_MODE_THREESHOLD, 0, 100));

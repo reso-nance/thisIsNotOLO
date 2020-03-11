@@ -26,25 +26,28 @@ knownLights = {}
 OSCsendPort = 8000
 OSClistenPort = 9000
 runOSCserver, runValidation = True, True
-validationTime = .2 # time in s after which a light value will be sent again if no ACK has been received
-lightAdresses = ["light"+str(i)+".local" for i in range(config.lightCount)]
+lightAdresses = ["light"+str(i)+".local" for i in config.activeWindows)]
 
 class Light:
     def __init__(self, hostname, ip):
         self.hostname = hostname
         self.ip = ip
-        self.ack = 0
-        self.value = 0
-        self.validationTime = time.time()*1000
-        self.validated = False
+        self.ack = 0 # value of the last ACK received
+        self.value = 0 # current light value
+        self.validationTime = time.time()*1000 # when last ACK has been received
+        self.validated = False # ACK value == value
+        self.retriesLeft = config.maxRetryPerPeriod # number of retries allowed for this light
+        self.resetRetry = None # time at which the validation will expire
 
     def setLight(self, value):
+        """ send the /light OSC message to this light and prepare for it's validation"""
         self.value = max(0, min(int(value), 100))
         liblo.send((self.ip, OSCsendPort), "/"+self.hostname+"/light", self.value)
         self.validationTime = time.time()
         self.validated = False
 
     def startFade(self, start, end, duration):
+        """ send the /fade OSC message to this light and prepare for it's validation"""
         constrain = lambda x : max(0, min(int(x), 100))
         start, end = constrain(start), constrain(end)
         self.value = [start, end, duration]
@@ -57,16 +60,18 @@ class Light:
         self.validated = False
     
     def validate(self):
-        if not self.validated and time.time() - self.validationTime > validationTime :
+        """ evaluate if the last received ACK correspond to the last value asked"""
+        if not self.validated and time.time() - self.validationTime > config.validationTime :
             if self.ack == self.value : 
                 self.validated = True
                 # print("validated :", self.value)
-            else : 
+            else :
                 if isinstance(self.value, int) : self.setLight(self.value)
                 elif isinstance(self.value, list) :
                     # print("trying to validate a fade :", self.value)
                     self.startFade(*self.value)
                 print("sending last value again for", self.hostname)
+                self.retriesLeft -= 1
 
 
 def unknownOSC(address, args, tags, IPaddress):
@@ -139,6 +144,7 @@ def broadcastOSC(OSCaddress, OSCport, OSCargs=None):
 #         print("tried to set light%i to %i but this light is'nt connected yet" %(lightID,value))
 
 def validateLights():
+    """ run validation on every connected lights"""
     while runValidation :
         for light in knownLights.values() : light.validate()
         time.sleep(0.001)
@@ -168,6 +174,6 @@ def askLightsForID(iterations):
     broadcast the OSC message "/whoIsThere" asking lights to identify themselves, responding with their IP and hostname
     For added safety, this message is broadcasted multiple times according to the iterations parameter
     """
-    for i in range(iterations):
+    for _ in range(iterations):
         broadcastOSC("/whoIsThere", OSCsendPort)
         time.sleep(1) # gives ESPs time to respond

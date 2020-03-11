@@ -31,7 +31,7 @@ activeSequences = {} # will contain the sequences currently playing
 #   the number of sequences using this lamp (to calculate mean)
 #   the last value sent to avoid unnecessary OSC packets
 lightStates = numpy.array([0]*8, dtype=[("sum", "uint16"), ("seqCount", "uint8"), ("lastSent", "uint8")])
-lightTimestamps = [datetime.now()]*config.lightCount
+lightTimestamps = [datetime.now()]*len(config.activeWindows)
 
 isPlaying = True # set this to False to exit the play thread
 
@@ -144,7 +144,7 @@ def playThread():
     print("starting to play sequences...")
     while isPlaying :
         while datetime.now() < nextLightTimer : time.sleep(0.0005)
-        nextLightTimer += timedelta(milliseconds=config.mainLoopDelay/config.lightCount)
+        nextLightTimer += timedelta(milliseconds=config.mainLoopDelay/len(config.activeWindows))
         if activeSequences : playSequencesForLight(currentLight)
         currentLight = currentLight+1 if currentLight<7 else 0
 
@@ -154,7 +154,7 @@ def play() :
 
 def blackoutThread():
     print("  blacking out...")
-    for i in range(config.lightCount):
+    for i in config.activeWindows :
         OSC.setLight(i,0)
         time.sleep(.1)
 

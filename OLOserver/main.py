@@ -39,7 +39,7 @@ def exitCleanly(*args):
     print("  exiting playThread...")
     sequences.isPlaying = False
     print("  turning the lights off...")
-    sequences.blackout()
+    sequences.blackoutThread() # calling the blocking function to avoid exiting when the thread is still running
     print("all good, see you around !")
     raise SystemExit
 
