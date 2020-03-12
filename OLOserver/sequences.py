@@ -30,8 +30,9 @@ activeSequences = {} # will contain the sequences currently playing
 #   the sum of the sequences playing it (accordingly damped)
 #   the number of sequences using this lamp (to calculate mean)
 #   the last value sent to avoid unnecessary OSC packets
-lightStates = numpy.array([0]*8, dtype=[("sum", "uint16"), ("seqCount", "uint8"), ("lastSent", "uint8")])
-lightTimestamps = [datetime.now()]*len(config.activeWindows)
+lightCount = max(config.activeWindows)
+lightStates = numpy.array([0]*lightCount, dtype=[("sum", "uint16"), ("seqCount", "uint8"), ("lastSent", "uint8")])
+lightTimestamps = [datetime.now()]*lightCount
 
 isPlaying = True # set this to False to exit the play thread
 
@@ -114,6 +115,8 @@ def playSequencesForLight(ID):
     """
     # print("evaluating sequences for light :", ID)
     global lightTimestamps, lightStates
+    # print("lightTimestamps", lightTimestamps)
+    # print("current ID", ID)
     startTime = lightTimestamps[ID] # last time we checked this lamp
     stopTime = datetime.now()
     lightTimestamps[ID] = stopTime
@@ -146,7 +149,8 @@ def playThread():
         while datetime.now() < nextLightTimer : time.sleep(0.0005)
         nextLightTimer += timedelta(milliseconds=config.mainLoopDelay/len(config.activeWindows))
         if activeSequences : playSequencesForLight(currentLight)
-        currentLight = currentLight+1 if currentLight<7 else 0
+
+        currentLight = currentLight+1 if currentLight < len(config.activeWindows) else 0
 
 def play() :
     """plays every sequence in activeSequence lamp by lamp while isPlaying is True"""

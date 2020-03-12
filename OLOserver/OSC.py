@@ -20,13 +20,13 @@
 #  
 import liblo, time, sys
 from threading import Thread, Timer
-import config
+import config, UI
 
 knownLights = {}
 OSCsendPort = 8000
 OSClistenPort = 9000
 runOSCserver, runValidation = True, True
-lightAdresses = ["light"+str(i)+".local" for i in config.activeWindows)]
+lightAdresses = ["light"+str(i)+".local" for i in config.activeWindows]
 
 class Light:
     def __init__(self, hostname, ip):
@@ -36,7 +36,7 @@ class Light:
         self.value = 0 # current light value
         self.validationTime = time.time()*1000 # when last ACK has been received
         self.validated = False # ACK value == value
-        self.retriesLeft = config.maxRetryPerPeriod # number of retries allowed for this light
+        self.retriesLeft = config.maxRetryPerMessage # number of retries allowed for this light
         self.resetRetry = None # time at which the validation will expire
 
     def setLight(self, value):
@@ -61,11 +61,13 @@ class Light:
     
     def validate(self):
         """ evaluate if the last received ACK correspond to the last value asked"""
-        if not self.validated and time.time() - self.validationTime > config.validationTime :
-            if self.ack == self.value : 
+        currentTime = time.time()
+        if not self.validated and currentTime - self.validationTime > config.validationTime :
+            if self.ack == self.value : # FIXME : this value may very well be from another (later) message
                 self.validated = True
+                self.retriesLeft = config.maxRetryPerMessage
                 # print("validated :", self.value)
-            else :
+            elif self.retriesLeft > 0:
                 if isinstance(self.value, int) : self.setLight(self.value)
                 elif isinstance(self.value, list) :
                     # print("trying to validate a fade :", self.value)
@@ -103,7 +105,7 @@ def handleID(address, args, tags, IPaddress):
     global knownLights
     ip = IPaddress.url.split("//")[1].split(":")[0] # retrieve IP from an url like osc.udp://10.0.0.12:35147/
     hostname = str(args[0])
-    if hostname not in knownLights : 
+    if hostname not in knownLights :
         print("added new device "+hostname)
     else : print("updated device "+hostname)
     knownLights.update({hostname:Light(hostname, ip)})
@@ -116,8 +118,10 @@ def setLight(hostname, value):
     - hostname : can be an int 0-7 or a string with the complete hostname ("light0")
     - value : int 0 (off) - 100 (full power)
     """
-    if isinstance(hostname, int) : hostname = "light"+str(hostname)
     value = int(value)
+    if isinstance(hostname, int) : 
+        if config.playNotesOnUI : UI.playNoteOnUI(hostname, value)
+        hostname = "light"+str(hostname)
     # print("setting %s to %i" %(hostname, value))
     if hostname in knownLights : knownLights[hostname].setLight(value)
     else : print("ERROR : cannot set light value on unknown device "+hostname)
@@ -132,16 +136,6 @@ def broadcastOSC(OSCaddress, OSCport, OSCargs=None):
         if OSCargs : liblo.send((ip, OSCport), OSCaddress, *OSCargs)
         else : liblo.send((ip, OSCport), OSCaddress)
         time.sleep(.01)
-
-# def sendValueToLight(value, lightID):
-#     """ send an OSC message to the light containing it's value. The lightID is an int 0-8"""
-#     value = min(100, max(value, 0))
-#     try :
-#         thisLight = next(light.IP for light in knownLights if light.hostname == "light%i"%lightID)
-#         liblo.send((thisLight.IP, OSCsendPort), "/%s/light" % thisLight.hostname, value)
-#         print("sent /%s/light"%thisLight.hostname, value)
-#     except StopIteration :
-#         print("tried to set light%i to %i but this light is'nt connected yet" %(lightID,value))
 
 def validateLights():
     """ run validation on every connected lights"""

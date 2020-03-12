@@ -112,3 +112,7 @@ def generateNotes() :
             sourceNoteIndex = 0
         notesGenerated += 1
     notes = ",".join(notes) # transform the list into a comma separated string for JS parsing later on
+
+def playNoteOnUI(lightID, value):
+    """ send a websocket asking the UI to play the corresponding note associated with a window"""
+    socketio.emit("playNoteForWindow", {"windowID":lightID, "value": value}, namespace='/home', broadcast=True)

@@ -101,20 +101,30 @@ $( document ).ready(function() {
         lightEvent($(event.target).attr("data-id"), 0);
     });
 
+    socket.on('playNoteForWindow', function(data) {
+        playNote(String(data.windowID), data.value);
+    });
+
     function lightEvent(lampID, value){
         recordedSequence.push([Date.now()-timeStarted, lampID, value]);
+        playNote(lampID, value);
+        console.log("window", lampID, (value == 0) ? "released" : "clicked");
+    }
+
+    function playNote(lampID, value){
         const noteIndex = activeWindows.indexOf(lampID);
         const note = notes[noteIndex];
-        if ( value == 0) synth.triggerRelease(note, undefined);
-        else synth.triggerAttack(note, undefined); // note or array, time, velocity 0~1
+        if (value == 0) synth.triggerRelease(note, undefined);
+        else synth.triggerAttack(note, undefined, value/100); // note or array, time, velocity 0~1
+        // else synth.triggerAttack(note, undefined, value/100); // note or array, time, velocity 0~1
         // const audioElement = document.getElementById("audio"+lampID); 
         // if (value == 0) audioElement.pause();
         // else {
         //     audioElement.play();
         //     audioElement.currentTime = 0;
         // }
-        console.log("window", lampID, (value == 0) ? "released" : "clicked");
     }
+
     // add a 0 element at the end of the sequence to reserve space at the end of the loop
     function endSequence() {
         if (recordedSequence.length<2) return;

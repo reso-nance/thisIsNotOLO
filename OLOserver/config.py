@@ -32,9 +32,8 @@ mainLoopDelay = 8 # time in milliseconds at which the sequences are evaluated an
 """---- web interface ----"""
 notes = ["C", "D", "E", "G", "A"] # list of notes that will be played on the UI
 startOctave = 3 # lowest octave to be played
-playNotesOnUI = False # play sounds corresponding to lights on the UI when sequences are played
+playNotesOnUI = True # play sounds corresponding to lights on the UI when sequences are played
 
 """--- wifi management ---"""
 validationTime = .2 # time in s after which a light value will be sent again if no ACK has been received
-maxRetryPerPeriod = 10 # max retry without receiving the correponding ACK for a given time period
-retryPeriod = 10 # will retry after this many seconds have passed since the last ACK received.
+maxRetryPerMessage = 3 # max retry without receiving the correponding ACK for a given message
