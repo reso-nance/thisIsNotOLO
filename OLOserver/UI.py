@@ -55,14 +55,14 @@ def handleHTTPS():
 
 @app.route('/')
 def rte_homePage():
-    return render_template('index.html', notes=notes, activeWindows=activeWindows)
+    return render_template('index.html', notes=notes, activeWindows=activeWindows, seqMaxLength=config.sequenceMaxLength)
 
 @app.errorhandler(404)
 def page_not_found(e):
     """ redirect 404 to the main page since user may come from various addresses including /"""
     if request.is_secure :
         print("using HTTPS")
-    return render_template('index.html', notes=notes, activeWindows=activeWindows)
+    return render_template('index.html', notes=notes, activeWindows=activeWindows, seqMaxLength=config.sequenceMaxLength)
 
 # --------------- SOCKET IO EVENTS ----------------
 

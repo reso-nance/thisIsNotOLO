@@ -33,6 +33,7 @@ mainLoopDelay = 8 # time in milliseconds at which the sequences are evaluated an
 notes = ["C", "D", "E", "G", "A"] # list of notes that will be played on the UI
 startOctave = 3 # lowest octave to be played
 playNotesOnUI = True # play sounds corresponding to lights on the UI when sequences are played
+sequenceMaxLength = 30000 # max duration of a sequence (in milliseconds)
 
 """--- wifi management ---"""
 validationTime = .2 # time in s after which a light value will be sent again if no ACK has been received

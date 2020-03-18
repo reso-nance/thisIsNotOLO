@@ -14,7 +14,9 @@ $( document ).ready(function() {
     console.log("notes", $("#notes").text())
     const notes =  ($("#notes").text()).split(",");// will be generated on the backend depending on the lightCount
     const activeWindows = ($("#activeWindows").text()).split(","); // get active window from the backend
-    const maxSequenceLength = 30000; //  in millis, recording will stop when this time has been reached
+    const maxSequenceLength = parseInt($("#seqMaxLength").text());
+    console.log($("#seqMaxLength"))
+    // const maxSequenceLength = 30000; //  in millis, recording will stop when this time has been reached
     // for example : ["C3", "E3", "G3", "G4", "E4", "G4", "C5", "E5"];
     console.log("active windows :", activeWindows);
     displayWindows();
