@@ -65,6 +65,7 @@ String OSCprefix; // will store /[hostname][MACaddress without semicolons
 bool OTA_asked = false; // flag which become true for OTA_TIMEOUT seconds after receiving a /beginOTA message to suspend device activity while flashing
 int lastValueUsed = 0;
 bool oscMode = false; // false = manual mode or OFF
+bool isOnline = false; // will be switched to true when connected
 #ifndef USE_BUILTIN_LED
 dimmerLampESP8266 dimmer(DIMMER_PWM, DIMMER_ZC);
 #endif
@@ -106,19 +107,16 @@ void setup() {
   hostname.replace(":","");
   #endif
   OSCprefix = "/"+hostname;
-  char hostnameAsChar[hostname.length()+1];
-  hostname.toCharArray(hostnameAsChar, hostname.length()+1);
   #ifdef SERIAL_DEBUG
   Serial.begin(115200);
   #endif
-  connectToWifi(hostnameAsChar, SSID, PSK);
-  udpserver.begin(listenPort); // start listening to specified port
-  debugPrint("\thostname : ");debugPrintln(hostname);
-  sendID();
+  connectToWifi(hostname, SSID, PSK, 5); //
+  if (isOnline) sendID();
 }
 
 void loop() {
 
+  isOnline = WiFi.status() == 3; // disconnection check
   uint potValue = analogRead(A0);
   if (potValue < OFF_MODE_THREESHOLD) { // OFF mode
     oscMode = false;
@@ -129,7 +127,9 @@ void loop() {
     if (!oscMode){ // first time we switch to OSC mode
       oscMode = true;
       setLight(0); // we turn the light off, waiting for OSC messages to arrive
+      debugPrint("wifi status : "); debugPrint(WiFi.status());
     }
+    if (!isOnline) connectToWifi(hostname, SSID, PSK, 1);
   }
   else { // manual mode
     oscMode = false;
@@ -340,21 +340,28 @@ void sendOsc(OSCMessage *msg,IPAddress ip,int port ){
     yield();
 }
 
-void connectToWifi(const char *Hostname, const char* ssid, const char* passphrase) {
+// void connectToWifi(const char *Hostname, const char* ssid, const char* passphrase, uint8_t tries) {
+void connectToWifi(const String hostname, const char* ssid, const char* passphrase, uint8_t tries) {
+  char Hostname[hostname.length()+1];
+  hostname.toCharArray(Hostname, hostname.length()+1);
   debugPrintln("\n\nConnecting to " + String(ssid) + "...");
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, passphrase);
   WiFi.hostname(Hostname);
   ESP.wdtFeed();
   yield();
-  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    debugPrintln("\tfailed to connect, retrying in 1s");
-    delay(1000);
+  while (!isOnline && tries > 0) {
+    tries -= 1;
+    isOnline = WiFi.waitForConnectResult() == 3;
+    if (tries > 0) delay(1000);
   }
-    debugPrintln("\tconnected :");
-    debugPrint("\tlocal IP :"); debugPrintln(WiFi.localIP());
-    ArduinoOTA.setPort(8266); //default OTA port
-    ArduinoOTA.setHostname(Hostname);// No authentication by default, can be set with : ArduinoOTA.setPassword((const char *)"passphrase");
-    ArduinoOTA.begin();
-    debugPrintln("\tlistening for OTA on port 8266");
+  if (!isOnline) return;
+  debugPrintln("\tconnected :");
+  debugPrint("\tlocal IP :"); debugPrintln(WiFi.localIP());
+  ArduinoOTA.setPort(8266); //default OTA port
+  ArduinoOTA.setHostname(Hostname);// No authentication by default, can be set with : ArduinoOTA.setPassword((const char *)"passphrase");
+  ArduinoOTA.begin();
+  debugPrintln("\tlistening for OTA on port 8266");
+  udpserver.begin(listenPort); // start listening to specified port
+  debugPrint("\thostname : ");debugPrintln(hostname);
 }
